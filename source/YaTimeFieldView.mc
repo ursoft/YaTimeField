@@ -373,6 +373,9 @@ class TimeLeftSource extends BaseSource {
     var m_oldRemainSeconds = null;
     var m_direction = TD_DOWN, m_progress = 0;
     function onCompute(info as Activity.Info) {
+        m_defLabel = Ui.loadResource(Rez.Strings.timeLeft);
+        m_progress = 0;
+
         m_distRemains = info.distanceToDestination; //or null
         m_currentSpeed = info.currentSpeed; //or null
         m_elapsedDistance = info.elapsedDistance; //or null
@@ -395,12 +398,10 @@ class TimeLeftSource extends BaseSource {
             if(m_oldRemainSeconds != null && newRemainSeconds >= m_oldRemainSeconds) { m_direction = TD_UP; }
             m_oldRemainSeconds = newRemainSeconds;
             m_timeObj.setTotalSeconds(newRemainSeconds.toLong());
-        }
-        m_defLabel = Ui.loadResource(Rez.Strings.timeLeft);
-        m_progress = 0;
-        if(m_elapsedDistance + m_distRemains > 1) {
-            m_progress = m_elapsedDistance * 100 / (m_elapsedDistance + m_distRemains);
-            m_defLabel += (" " + (100 - m_progress) + " %");
+            if(m_elapsedDistance + m_distRemains > 1) {
+                m_progress = m_elapsedDistance * 100 / (m_elapsedDistance + m_distRemains);
+                m_defLabel += (" " + (100 - m_progress) + " %");
+            }
         }
     }
     function initialize() {

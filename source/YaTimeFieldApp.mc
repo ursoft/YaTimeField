@@ -34,7 +34,7 @@ class YaTimeFieldApp extends Application.AppBase {
 
     function initialize() {
         AppBase.initialize();
-        storeSetting("appVersion", "25.11.2021");
+        storeSetting("appVersion", "27.11.2021");
         readAllSettings();
     }
 
