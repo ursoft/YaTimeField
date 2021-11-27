@@ -12,5 +12,5 @@
     <string id="notStartedLarge">Таймер\n\nсейчас\n\nещё не\n\nзапущен</string>
     <string id="notStartedMedium">Таймер сейчас\n\nне запущен</string>
     <string id="notStarted">Таймер сейчас\nне запущен</string>
-    <string id="flipSegmentsTitle">Перевернуть сегменты: </string>
+    <string id="flipLandscapeTitle">Перевернуть ландшафт: </string>
 </strings>

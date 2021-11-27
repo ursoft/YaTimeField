@@ -5,6 +5,11 @@ using Toybox.WatchUi as Ui;
 import Toybox.Application.Properties;
 
 class YaTimeFieldApp extends Application.AppBase {
+    function initialize() {
+        AppBase.initialize();
+        storeSetting("appVersion", "27.11.2021"); //change it here (the only place)
+        readAllSettings();
+    }
     function storeSetting(name as String, value) as Void {
         try {
             if (Application has :Storage) {
@@ -16,7 +21,6 @@ class YaTimeFieldApp extends Application.AppBase {
             Sys.println("storeSetting exception: " + ex); 
         }
     }
-
     function readSetting(name as String, defValue) as Numeric or Boolead or String or Null {
         try {
             if (Application has :Storage) {
@@ -31,20 +35,10 @@ class YaTimeFieldApp extends Application.AppBase {
             return defValue;
         }
     }
-
-    function initialize() {
-        AppBase.initialize();
-        storeSetting("appVersion", "27.11.2021");
-        readAllSettings();
-    }
-
     // onStart() is called on application start up
-    function onStart(state as Dictionary?) as Void {
-    }
-
+    function onStart(state as Dictionary?) as Void {}
     // onStop() is called when your application is exiting
-    function onStop(state as Dictionary?) as Void {
-    }
+    function onStop(state as Dictionary?) as Void {}
 
     var m_view as YaTimeFieldView = null;
     // Return the initial view of your application here
@@ -55,10 +49,8 @@ class YaTimeFieldApp extends Application.AppBase {
 
     var m_fieldCaptionVisible as Boolean = true;
     var m_flipSegments as Boolean = false;
-
     var m_fieldCaption as String = "";
-    var m_fieldSources = [0, -1, -1, -1];
-
+    var m_fieldSources = [0, -1, -1, -1]; //=SK_CNT
     function readAllSettings() {
         m_fieldCaptionVisible = true;
         m_flipSegments = false;
@@ -79,7 +71,6 @@ class YaTimeFieldApp extends Application.AppBase {
             Sys.println("readAllSettings exception: " + ex); 
         }
     }
-
     function onSettingsChanged() {
         AppBase.onSettingsChanged();
         readAllSettings();

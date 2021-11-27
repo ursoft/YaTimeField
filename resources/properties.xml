@@ -16,7 +16,7 @@
         <setting propertyKey="@Properties.fieldCaptionVisible" title="@Strings.fieldCaptionVisibleTitle">
             <settingConfig type="boolean" />
         </setting>
-        <setting propertyKey="@Properties.flipSegments" title="@Strings.flipSegmentsTitle">
+        <setting propertyKey="@Properties.flipSegments" title="@Strings.flipLandscapeTitle">
             <settingConfig type="boolean" />
         </setting>
         <setting propertyKey="@Properties.fieldCaption" title="@Strings.fieldCaptionTitle">
