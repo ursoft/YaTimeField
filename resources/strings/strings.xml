@@ -1,0 +1,16 @@
+<strings>
+    <string id="AppName">YaTimeField</string>
+    <string id="appVersionTitle">App Version: </string>
+    <string id="fieldCaptionTitle">YaTimeField Caption or empty string: </string>
+    <string id="fieldCaptionVisibleTitle">Show YaTimeField Caption: </string>
+    <string id="fieldSourceTitle">Field Source: </string>
+    <string id="noFieldSource">(none)</string>
+    <string id="timerTimeSource">TimerTime</string>
+    <string id="clockTime">ClockTime</string>
+    <string id="elapsedTime">ElapsedTime</string>
+    <string id="timeLeft">TimeLeft</string>
+    <string id="notStartedLarge">Timer\n\nis not\n\nstarted\n\nyet</string>
+    <string id="notStartedMedium">Timer is not\n\nstarted yet</string>
+    <string id="notStarted">Timer is not\nstarted yet</string>
+    <string id="flipSegmentsTitle">Flip segments: </string>
+</strings>

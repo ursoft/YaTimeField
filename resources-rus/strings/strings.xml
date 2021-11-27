@@ -1,0 +1,16 @@
+<strings>
+    <string id="AppName">YaTimeField</string>
+    <string id="appVersionTitle">Версия приложения: </string>
+    <string id="fieldCaptionTitle">Заголовок поля или пустая строка: </string>
+    <string id="fieldCaptionVisibleTitle">Показать заголовок поля: </string>
+    <string id="noFieldSource">(нет)</string>
+    <string id="fieldSourceTitle">Источник поля: </string>
+    <string id="timerTimeSource">Таймер</string>
+    <string id="clockTime">Время</string>
+    <string id="elapsedTime">Истёкшее</string>
+    <string id="timeLeft">Осталось</string>
+    <string id="notStartedLarge">Таймер\n\nсейчас\n\nещё не\n\nзапущен</string>
+    <string id="notStartedMedium">Таймер сейчас\n\nне запущен</string>
+    <string id="notStarted">Таймер сейчас\nне запущен</string>
+    <string id="flipSegmentsTitle">Перевернуть сегменты: </string>
+</strings>
