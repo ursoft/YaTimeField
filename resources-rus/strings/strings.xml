@@ -13,4 +13,13 @@
     <string id="notStartedMedium">Таймер сейчас\n\nне запущен</string>
     <string id="notStarted">Таймер сейчас\nне запущен</string>
     <string id="flipLandscapeTitle">Перевернуть ландшафт: </string>
+    <string id="forceVectorFontTitle">Всегда векторный шрифт: </string>
+    <string id="lapTime">Время круга</string>
+    <string id="avgLapTime">Ср. время круга</string>
+    <string id="timeBehind">Время отставания</string>
+    <string id="workoutDuration">Длит. трен.</string>
+    <string id="timeToGo">Ост. время трен.</string>
+    <string id="stepTime">Время этапа трен.</string>
+    <string id="timeToRecovery">Восстановление</string>
+    <string id="antiAliasingTitle">Сглаживание: </string>
 </strings>

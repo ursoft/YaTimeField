@@ -48,12 +48,16 @@ class YaTimeFieldApp extends Application.AppBase {
     }
 
     var m_fieldCaptionVisible as Boolean = true;
-    var m_flipSegments as Boolean = false;
+    var m_flipLandscape as Boolean = false;
+    var m_forceVectorFont as Boolean = false;
+    var m_antiAliasing as Boolean = true;
     var m_fieldCaption as String = "";
     var m_fieldSources = [0, -1, -1, -1]; //=SK_CNT
     function readAllSettings() {
         m_fieldCaptionVisible = true;
-        m_flipSegments = false;
+        m_flipLandscape = false;
+        m_forceVectorFont = false;
+        m_antiAliasing = true;
         m_fieldCaption = "";
         m_fieldSources[0] = 0;
         m_fieldSources[1] = -1;
@@ -61,7 +65,9 @@ class YaTimeFieldApp extends Application.AppBase {
         m_fieldSources[3] = -1;
         try {
             m_fieldCaptionVisible = readSetting("fieldCaptionVisible", m_fieldCaptionVisible);
-            m_flipSegments = readSetting("flipSegments", m_flipSegments);
+            m_flipLandscape = readSetting("flipLandscape", m_flipLandscape);
+            m_forceVectorFont = readSetting("forceVectorFont", m_forceVectorFont);
+            m_antiAliasing = readSetting("antiAliasing", m_antiAliasing);
             m_fieldCaption = readSetting("fieldCaption", m_fieldCaption);
             m_fieldSources[0] = readSetting("fieldSource1", m_fieldSources[0]);
             m_fieldSources[1] = readSetting("fieldSource2", m_fieldSources[1]);

@@ -4,11 +4,13 @@ import Toybox.Time;
 using Toybox.WatchUi as Ui;
 
 //для тестирования (в релизе поставить всё по 0)
-const TEST_ADD_SECONDS = 0; // увеличить отображаемое время, чтобы отработал алгоритм показа часов, например
-const TEST_PAUSE = false;   // показывать символ паузы вместо символа "стоп" поля timerTime
-const TEST_REMAINS = false; // тест прогноза времени финиша
+const TEST_ADD_SECONDS = 0;  // увеличить отображаемое время, чтобы отработал алгоритм показа часов, например
+const TEST_PAUSE = false;    // показывать символ паузы вместо символа "стоп" поля timerTime
+const TEST_REMAINS = false;  // тест прогноза времени финиша
+const TEST_RECTS = false;    // тест вычислений координат
 
-enum SourceKind { SK_timerTime, SK_clockTime, SK_elapsedTime, SK_timeLeft, SK_CNT }
+enum SourceKind { SK_timerTime, SK_clockTime, SK_elapsedTime, SK_timeLeft, SK_lapTime, SK_avgLapTime, SK_timeBehind, SK_workoutDuration,
+    SK_timeToGo, SK_stepTime, SK_timeToRecovery }
 enum TimeGrowingDirection { TD_UP, TD_DOWN, TD_PAUSED, TD_STOPPED }
 enum ArrowDirection { AD_UP, AD_DOWN, AD_LEFT, AD_RIGHT } // относительно текста времени
 enum WhereIsUp { 
@@ -16,6 +18,11 @@ enum WhereIsUp {
     UP_IS_RIGHT,  // то же самое, не переворачивать
     UP_NORMAL     // книжное расположение текста
 }
+enum Dims1030 { FULL_WIDTH = 282, HALF_WIDTH = 140, FULL_HEIGHT = 470, HALF_HEIGHT = 234, 
+    B3_HEIGHT = 186 /*or 187*/,
+    THIRD_HEIGHT = 154 /*or 155*/,
+    FOURTH_HEIGHT = 115 /*or 116*/,
+    /*FIFTH_HEIGHT = 92 or 93*/  }
 
 class TimeObj {
     var m_seconds as Long = 0, m_minutes as Long = 0, m_hours as Long = 0;
@@ -29,19 +36,28 @@ class TimeObj {
     }
 }
 
+class DrawContext {
+    var m_dc, m_foreColor, m_backColor, m_inversed;
+    function initialize(dc, foreColor, backColor, inversed) {
+        m_dc = dc; m_foreColor = foreColor; m_backColor = backColor; m_inversed = inversed;
+    }
+}
+
 class DigitPainterBase {
-    var m_dc as Graphics.Dc, m_direction as TimeGrowingDirection;
+    var m_drawContext as DrawContext, m_direction as TimeGrowingDirection;
     var m_x, m_y, m_w, m_h; //rectangle in field coordinates
     var m_digitGap as Long, m_digitWidth as Long, m_curPosition as Long;
     var m_markSize as Long;
 
-    var m_timeObj as TimeObj;
+    var m_timeObj as TimeObj, m_digits = 6, m_delimiters = 2;
     var m_bPrintSeconds as Boolean = true;
     var m_bPrintHoursd as Boolean = true;
     var m_bPrintHours as Boolean = true;
 
-    function initialize(timeObj, x, y, w, h) {
+    function initialize(timeObj, drawContext, x, y, w, h) {
         m_timeObj = timeObj;
+        m_drawContext = drawContext;
+        m_x = x; m_y = y; m_w = w; m_h = h;
     }
     function CalcArrowDirection(rotation) {
         var ret = AD_UP;        
@@ -59,54 +75,58 @@ class DigitPainterBase {
         return ret;
     }
     function drawDirectionMarks(cx, cy, half_dist, isBlink, rotation) {
-        if (isBlink) { m_dc.setPenWidth(3); }
+        if (isBlink) { m_drawContext.m_dc.setPenWidth(3); }
         var wingSize = m_markSize / 2;
         if (m_direction == TD_UP || m_direction == TD_DOWN) {
             var arrowDirection = CalcArrowDirection(rotation);
             switch(arrowDirection) {
                 case AD_UP:
-                    m_dc.drawLine(cx - wingSize, cy + wingSize + half_dist, cx, cy + half_dist);
-                    m_dc.drawLine(cx + wingSize, cy + wingSize + half_dist, cx, cy + half_dist);
-                    m_dc.drawLine(cx - wingSize, cy - half_dist, cx, cy - wingSize - half_dist);
-                    m_dc.drawLine(cx + wingSize, cy - half_dist, cx, cy - wingSize - half_dist);
+                    m_drawContext.m_dc.drawLine(cx - wingSize, cy + wingSize + half_dist, cx, cy + half_dist);
+                    m_drawContext.m_dc.drawLine(cx + wingSize, cy + wingSize + half_dist, cx, cy + half_dist);
+                    m_drawContext.m_dc.drawLine(cx - wingSize, cy - half_dist, cx, cy - wingSize - half_dist);
+                    m_drawContext.m_dc.drawLine(cx + wingSize, cy - half_dist, cx, cy - wingSize - half_dist);
                     break;
                 case AD_DOWN:
-                    m_dc.drawLine(cx - wingSize, cy + half_dist, cx, cy + wingSize + half_dist);
-                    m_dc.drawLine(cx + wingSize, cy + half_dist, cx, cy + wingSize + half_dist);
-                    m_dc.drawLine(cx - wingSize, cy - wingSize - half_dist, cx, cy - half_dist);
-                    m_dc.drawLine(cx + wingSize, cy - wingSize - half_dist, cx, cy - half_dist);
+                    m_drawContext.m_dc.drawLine(cx - wingSize, cy + half_dist, cx, cy + wingSize + half_dist);
+                    m_drawContext.m_dc.drawLine(cx + wingSize, cy + half_dist, cx, cy + wingSize + half_dist);
+                    m_drawContext.m_dc.drawLine(cx - wingSize, cy - wingSize - half_dist, cx, cy - half_dist);
+                    m_drawContext.m_dc.drawLine(cx + wingSize, cy - wingSize - half_dist, cx, cy - half_dist);
                     break;
                 case AD_LEFT:
-                    m_dc.drawLine(cx - half_dist - wingSize, cy, cx - half_dist, cy + wingSize);
-                    m_dc.drawLine(cx - half_dist - wingSize, cy, cx - half_dist, cy - wingSize);
-                    m_dc.drawLine(cx + half_dist, cy, cx + half_dist + wingSize, cy + wingSize);
-                    m_dc.drawLine(cx + half_dist, cy, cx + half_dist + wingSize, cy - wingSize);
+                    m_drawContext.m_dc.drawLine(cx - half_dist - wingSize, cy, cx - half_dist, cy + wingSize);
+                    m_drawContext.m_dc.drawLine(cx - half_dist - wingSize, cy, cx - half_dist, cy - wingSize);
+                    m_drawContext.m_dc.drawLine(cx + half_dist, cy, cx + half_dist + wingSize, cy + wingSize);
+                    m_drawContext.m_dc.drawLine(cx + half_dist, cy, cx + half_dist + wingSize, cy - wingSize);
                     break;
                 case AD_RIGHT:
-                    m_dc.drawLine(cx - half_dist, cy, cx - half_dist - wingSize, cy + wingSize);
-                    m_dc.drawLine(cx - half_dist, cy, cx - half_dist - wingSize, cy - wingSize);
-                    m_dc.drawLine(cx + half_dist + wingSize, cy, cx + half_dist, cy + wingSize);
-                    m_dc.drawLine(cx + half_dist + wingSize, cy, cx + half_dist, cy - wingSize);
+                    m_drawContext.m_dc.drawLine(cx - half_dist, cy, cx - half_dist - wingSize, cy + wingSize);
+                    m_drawContext.m_dc.drawLine(cx - half_dist, cy, cx - half_dist - wingSize, cy - wingSize);
+                    m_drawContext.m_dc.drawLine(cx + half_dist + wingSize, cy, cx + half_dist, cy + wingSize);
+                    m_drawContext.m_dc.drawLine(cx + half_dist + wingSize, cy, cx + half_dist, cy - wingSize);
                     break;
             }
         } else if (m_direction == TD_PAUSED) {
             switch(rotation) {
                 case UP_IS_LEFT: case UP_IS_RIGHT:
-                    m_dc.drawLine(cx - m_markSize, cy + wingSize, cx + m_markSize, cy + wingSize);
-                    m_dc.drawLine(cx - m_markSize, cy - wingSize, cx + m_markSize, cy - wingSize);
+                    m_drawContext.m_dc.drawLine(cx - m_markSize, cy + wingSize, cx + m_markSize, cy + wingSize);
+                    m_drawContext.m_dc.drawLine(cx - m_markSize, cy - wingSize, cx + m_markSize, cy - wingSize);
                     break;
                 default: //normal
-                    m_dc.drawLine(cx - wingSize, cy + m_markSize, cx - wingSize, cy - m_markSize);
-                    m_dc.drawLine(cx + wingSize, cy + m_markSize, cx + wingSize, cy - m_markSize);
+                    m_drawContext.m_dc.drawLine(cx - wingSize, cy + m_markSize, cx - wingSize, cy - m_markSize);
+                    m_drawContext.m_dc.drawLine(cx + wingSize, cy + m_markSize, cx + wingSize, cy - m_markSize);
                     break;
             }
         } else if (m_direction == TD_STOPPED) {
-            m_dc.drawRectangle(cx - wingSize, cy - wingSize, 2 * (wingSize + 1), 2 * (wingSize + 1));
+            m_drawContext.m_dc.drawRectangle(cx - wingSize, cy - wingSize, 2 * (wingSize + 1), 2 * (wingSize + 1));
         }
-        if (isBlink) { m_dc.setPenWidth(1); }
+        if (isBlink) { m_drawContext.m_dc.setPenWidth(1); }
     }
-    function drawAll(dc, direction, isBlink) {
-        m_dc = dc;
+    function drawAllDigits(direction, isBlink) {
+        if(TEST_RECTS) {
+            m_drawContext.m_dc.drawRectangle(m_x, m_y, m_w, m_h);
+            m_drawContext.m_dc.drawLine(m_x, m_y, m_x + m_w, m_y + m_h);
+        }
+
         m_direction = direction;
         var digit as Number = m_timeObj.m_hours / 10;
         if (m_bPrintHoursd) { drawDigit(digit); }
@@ -130,72 +150,139 @@ class DigitPainterBase {
             NotifySecondsHidden(); 
         }
     }
+    function drawProgress(percent) {
+        if(m_w > m_h) {
+            m_drawContext.m_dc.fillRectangle(m_x + 1, m_y + 1, percent * (m_w - 2) / 100, m_h - 2);
+        } else {
+            m_drawContext.m_dc.fillRectangle(m_x + 1, m_y + 1, m_w - 2, percent * (m_h - 2) / 100);
+        }
+    }
     function NotifySecondsHidden() {}
 }
-class DigitPainterVector extends DigitPainterBase {
+class DigitPainterVectorBase extends DigitPainterBase {
     //4x6 matrix
     const SegmentDict = {
         0 => [[1,0, 3,0], [3,0, 4,1], [4,1, 4,5], [4,5, 3,6], [3,6, 1,6], [1,6, 0,5], [0,5, 0,1], [0,1, 1,0]],
         1 => [[1,0, 3,0], [2,0, 2,6], [2,6, 1,5]], 
         2 => [[0,5, 1,6], [1,6, 3,6], [3,6, 4,5], [4,5, 4,4], [4,4, 3,3], [3,3, 1,3], [1,3, 0,2], [0,2, 0,0], [0,0, 4,0]], 
         3 => [[0,5, 1,6], [1,6, 3,6], [3,6, 4,5], [4,5, 4,4], [4,4, 3,3], [3,3, 2,3], [3,3, 4,2], [4,2, 4,1], [4,1, 3,0], [3,0, 1,0], [1,0, 0,1]], 
-        4 => [[3,0, 3,6], [3,6, 0,2], [0,2, 4,2]],
+        4 => [[3,0, 3,6], [1,6, 0,2], [0,2, 4,2]],
         5 => [[0,1, 1,0], [1,0, 3,0], [3,0, 4,1], [4,1, 4,3], [4,3, 3,4], [3,4, 0,4], [0,4, 0,6], [0,6, 4,6]],
         6 => [[3,6, 2,6], [2,6, 0,4], [0,4, 0,1], [0,1, 1,0], [1,0, 3,0], [3,0, 4,1], [4,1, 4,2], [4,2, 3,3], [3,3, 0,3]],
         7 => [[1,0, 4,6], [4,6, 0,6], [2,3, 3,3]],
         8 => [[1,3, 0,2], [0,2, 0,1], [0,1, 1,0], [1,0, 3,0], [3,0, 4,1], [4,1, 4,2], [4,2, 3,3], [3,3, 1,3], [1,3, 0,4], [0,4, 0,5], [0,5, 1,6], [1,6, 3,6], [3,6, 4,5], [4,5, 4,4], [4,4, 3,3]], 
         9 => [[1,0, 2,0], [2,0, 4,2], [4,2, 4,5], [4,5, 3,6], [3,6, 1,6], [1,6, 0,5], [0,5, 0,4], [0,4, 1,3], [1,3, 4,3]]
     };
-    var m_flipSegments;
     var m_kx, m_ky, m_penWidth;
-    function initialize(timeObj, x, y, w, h) {
-        DigitPainterBase.initialize(timeObj, x, y, w, h);
-        m_flipSegments = getApp().m_flipSegments;
+    function initialize(timeObj, drawContext, x, y, w, h) {
+        DigitPainterBase.initialize(timeObj, drawContext, x, y, w, h);
 
-        m_digitGap = w / 17;
-        m_penWidth = m_digitGap / 2;
-        m_markSize = m_digitGap - 2;
-        m_x = x + m_digitGap; m_y = y + m_digitGap; 
-        m_w = w - 2 * m_digitGap; m_h = h - 2 * m_digitGap;
-
-        var digits = 6, delimiters = 2;
         if (m_timeObj.m_hours == 0 && !m_timeObj.m_shouldShowHour) {
-            digits = 4;
-            delimiters = 1;
+            m_digits = 4;
+            m_delimiters = 1;
             m_bPrintHoursd = false;
             m_bPrintHours = false;
         } else if (m_timeObj.m_hours < 10) {
-            digits = 5;
+            m_digits = 5;
             m_bPrintHoursd = false;
         }
-        m_digitWidth = (m_h - m_digitGap * (digits / 2 + 2 * delimiters) - delimiters * m_markSize + digits / 2 /*anti-round*/) / digits;
-        m_ky = m_digitWidth / 4;
-        m_kx = m_w / 6;
-        m_curPosition = m_y;
+    }
+    function CalcDigitWidth(space) {
+        m_digitWidth = (space - m_digitGap * (2 + m_digits / 2 + 2 * m_delimiters) - m_delimiters * m_markSize + m_digits / 2 /*anti-round*/) / m_digits;
+    }
+}
+class DigitPainterVectorBook extends DigitPainterVectorBase {
+    function initialize(timeObj, drawContext, x, y, w, h) {
+        if (w <= HALF_WIDTH) {
+            m_markSize = 6;
+            m_penWidth = 5;
+        } else {
+            m_markSize = 8;
+            m_penWidth = 6;
+        }
+        m_digitGap = m_markSize + 2;
+        DigitPainterVectorBase.initialize(timeObj, drawContext, x, y, w, h);
+        CalcDigitWidth(m_w);
+
+        m_kx = m_digitWidth / 4;
+        m_ky = (m_h - 2 * m_digitGap) / 6;
+        m_curPosition = m_digitGap + m_x;
+
+        if(m_digitWidth / m_penWidth < 2) {
+            m_penWidth = m_digitWidth / 2;
+        }
     }
     function drawDigit(digit as Number) {
-        m_dc.setPenWidth(m_penWidth);
+        m_drawContext.m_dc.setPenWidth(m_penWidth);
+        if (digit < 0 || digit > 9) { digit = 0; }
+        var lines = SegmentDict[digit.toNumber()];
+        for(var i = 0; i < lines.size(); i++) {
+            //each line is [x1, y1, x2, y2] in relative [0..4, 0..6] space
+            var line = lines[i];
+            var x1 = m_curPosition + m_kx * line[0] + 1; var x2 = m_curPosition + m_kx * line[2] + 1;
+            var y1 = m_y + m_h - m_digitGap - m_ky * line[1]; var y2 = m_y + m_h - m_ky * line[3] - m_digitGap;
+            m_drawContext.m_dc.drawLine(x1, y1, x2, y2);
+        }
+        m_drawContext.m_dc.setPenWidth(1);
+        m_curPosition += (m_digitWidth + m_digitGap);
+        if(TEST_RECTS) {
+            m_drawContext.m_dc.drawRectangle(m_curPosition, m_y, m_curPosition, m_y + m_w);
+        }
+    }
+    function drawDelimiter(isBlink) {
+        var cy = m_y + m_h / 2, cx = m_curPosition + m_markSize / 2;
+        drawDirectionMarks(cx, cy, m_h / 10, isBlink, UP_NORMAL);
+        m_curPosition += (m_markSize + m_digitGap);
+    }
+}
+class DigitPainterVectorLandscape extends DigitPainterVectorBase {
+    var m_flipLandscape;
+    function drawProgress(percent) {
+        if(m_flipLandscape) {
+            var nonFilledSize = (100 - percent) * (m_h - 2) / 100;
+            m_drawContext.m_dc.fillRectangle(m_x + 1, nonFilledSize + m_y + 1, m_w - 2, m_h - 2 - nonFilledSize);
+        } else {
+            DigitPainterVectorBase.drawProgress(percent);
+        }
+    }
+    function initialize(timeObj, drawContext, x, y, w, h) {
+        m_flipLandscape = getApp().m_flipLandscape;
+        m_digitGap = w / 17;
+        m_penWidth = m_digitGap / 2;
+        m_markSize = m_digitGap - 2;
+        DigitPainterVectorBase.initialize(timeObj, drawContext, x, y, w, h);
+        CalcDigitWidth(m_h);
+
+        m_ky = m_digitWidth / 4;
+        m_kx = (m_w - 2 * m_digitGap) / 6;
+        m_curPosition = m_digitGap + m_y;
+    }
+    function drawDigit(digit as Number) {
+        m_drawContext.m_dc.setPenWidth(m_penWidth);
         if (digit < 0 || digit > 9) { digit = 0; }
         var lines = SegmentDict[digit.toNumber()];
         for(var i = 0; i < lines.size(); i++) {
             //each line is [x1, y1, x2, y2] in relative [0..4, 0..6] space
             var line = lines[i];
             var x1, y1, x2, y2;
-            if (m_flipSegments) {
-                x1 = m_w + m_x - m_kx * line[1]; x2 = m_w + m_x - m_kx * line[3];
-                y1 = 2 * m_y + m_h - m_curPosition - m_ky * line[0]; y2 = 2 * m_y + m_h - m_curPosition - m_ky * line[2];
+            if (m_flipLandscape) {
+                x1 = m_w + m_x - m_kx * line[1] - m_digitGap - m_penWidth / 3; x2 = m_w + m_x - m_kx * line[3] - m_digitGap - m_penWidth / 3;
+                y1 = 2 * m_y + m_h - m_curPosition - m_ky * line[0] - 1; y2 = 2 * m_y + m_h - m_curPosition - m_ky * line[2] - 1;
             } else {
-                x1 = m_x + m_kx * line[1]; x2 = m_x + m_kx * line[3];
+                x1 = m_digitGap + m_x + m_kx * line[1] + m_penWidth / 3; x2 = m_digitGap + m_x + m_kx * line[3] + m_penWidth / 3;
                 y1 = m_curPosition + m_ky * line[0]; y2 = m_curPosition + m_ky * line[2];
             }
-            m_dc.drawLine(x1, y1, x2, y2);
+            m_drawContext.m_dc.drawLine(x1, y1, x2, y2);
         }
-        m_dc.setPenWidth(1);
+        m_drawContext.m_dc.setPenWidth(1);
         m_curPosition += (m_digitWidth + m_digitGap);
+        if(TEST_RECTS) {
+            m_drawContext.m_dc.drawRectangle(m_x, m_curPosition, m_x + m_w, m_curPosition);
+        }
     }
     function drawDelimiter(isBlink) {
         var cx = m_x + m_w / 2, cy, rotation;
-        if (m_flipSegments) {
+        if (m_flipLandscape) {
             cy = 2 * m_y + m_h - m_curPosition - m_markSize / 2;
             rotation = UP_IS_LEFT;
         } else {
@@ -208,26 +295,25 @@ class DigitPainterVector extends DigitPainterBase {
 }
 class DigitPainterFont extends DigitPainterBase {
     var m_font = Graphics.FONT_SYSTEM_NUMBER_THAI_HOT;
-    function initialize(timeObj, x, y, w, h) {
-        DigitPainterBase.initialize(timeObj, x, y, w, h);
-        var digits = 6, delimiters = 2;
-        if (w <= 140) {
+    function initialize(timeObj, drawContext, x, y, w, h) {
+        DigitPainterBase.initialize(timeObj, drawContext, x, y, w, h);
+        if (w <= HALF_WIDTH) {
             m_markSize = 6;
 
             if (m_timeObj.m_hours > 9) { //no place for the seconds
                 m_bPrintSeconds = false;
-                digits = 4;
-                delimiters = 1;
+                m_digits = 4;
+                m_delimiters = 1;
             } else if (m_timeObj.m_hours > 0 || m_timeObj.m_shouldShowHour) {
                 m_bPrintHoursd = false;
-                digits = 5;
+                m_digits = 5;
             } else {
-                digits = 4;
-                delimiters = 1;
+                m_digits = 4;
+                m_delimiters = 1;
                 m_bPrintHours = false;
                 m_bPrintHoursd = false;
             }
-            if (digits == 4) {
+            if (m_digits == 4) {
                 m_font = Graphics.FONT_SYSTEM_NUMBER_HOT;
                 m_digitWidth = 29;
                 m_digitGap = 2;
@@ -237,24 +323,30 @@ class DigitPainterFont extends DigitPainterBase {
                 m_digitGap = 1;
             }
         } else {
-            m_digitWidth = 38;
-            m_digitGap = 2;
-            m_markSize = 8;
+            if(h < B3_HEIGHT) {
+                m_font = Graphics.FONT_SYSTEM_NUMBER_HOT;
+                m_digitWidth = 29;
+                m_digitGap = 2;
+                m_markSize = 6;
+            } else {
+                m_digitWidth = 38;
+                m_digitGap = 2;
+                m_markSize = 8;
+            }
         }
-        var need_x = m_digitWidth * digits + m_digitGap * (digits / 2 + 2 * delimiters) + delimiters * (m_markSize + 7);
-        m_x = x + (w - need_x) / 2; //center!
-        m_y = y + m_digitGap; 
-        m_w = need_x; m_h = h - 2 * m_digitGap;
-
-        m_curPosition = m_x;
+        var need_x = m_digitWidth * m_digits + m_digitGap * (2 + m_digits / 2 + 2 * m_delimiters) + m_delimiters * (m_markSize + 7);
+        m_curPosition = x + (w - need_x) / 2 + m_digitGap; //center!
     }
     function drawDigit(digit as Number) {
         if (digit < 0 || digit > 9) { digit = 0; }
-        m_dc.drawText(m_curPosition + m_digitWidth / 2, m_y + m_h / 2 + m_digitWidth / 7, m_font, digit.format("%d"), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        m_drawContext.m_dc.drawText(m_curPosition + m_digitWidth / 2, m_y + m_h / 2 + m_digitWidth / 7, m_font, digit.format("%d"), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         m_curPosition += (m_digitWidth + m_digitGap);
+        if(TEST_RECTS) {
+            m_drawContext.m_dc.drawRectangle(m_curPosition, m_y, m_curPosition, m_y + m_w);
+        }
     }
     function NotifySecondsHidden() {
-        m_dc.drawRectangle(m_curPosition - m_digitGap, m_y + m_h / 2 - m_digitWidth / 7, 3, 3);
+        m_drawContext.m_dc.drawRectangle(m_curPosition - m_digitGap, m_y + m_h / 2 - m_digitWidth / 7, 3, 3);
     }
     function drawDelimiter(isBlink) {
         var cx = m_curPosition + m_markSize / 2 + 3, cy = m_y + m_h / 2;
@@ -275,47 +367,56 @@ class BaseSource {
         return fieldCaption;
     }
     function onCompute(info as Activity.Info) {}
-    function drawContent(dc, x, y, w, h) {
-        dc.fillRoundedRectangle(x + 1, y + 1, w - 2, h - 2, 5);
+    function preDrawTime(sp, direction, isBlink) {}
+    function postDrawTime(sp, direction, isBlink) {}
+    function drawContent(drawContext, x, y, w, h) {
+        drawContext.m_dc.fillRoundedRectangle(x + 1, y + 1, w - 2, h - 2, 5);
     }
-    function onUpdate(dc, x, y, w, h, label) {
+    function onUpdate(drawContext, x, y, w, h, label) {
         if (label.length()) {
-            dc.drawText(x + 5, y, Graphics.FONT_SYSTEM_XTINY, label, Graphics.TEXT_JUSTIFY_LEFT);
-            var labelHeight = dc.getFontHeight(Graphics.FONT_SYSTEM_XTINY);
+            drawContext.m_dc.drawText(x + 5, y, Graphics.FONT_SYSTEM_XTINY, label, Graphics.TEXT_JUSTIFY_LEFT);
+            var labelHeight = drawContext.m_dc.getFontHeight(Graphics.FONT_SYSTEM_XTINY);
             y += labelHeight;
             h -= labelHeight;
         }
-        //dc.setClip(x, y, w, h); //ненадежно работает в симуляторе
-        drawContent(dc, x, y, w, h);
-        //dc.clearClip();
+        //drawContext.m_dc.setClip(x, y, w, h); //ненадежно работает в симуляторе
+        drawContent(drawContext, x, y, w, h);
+        //drawContext.m_dc.clearClip();
     }
-    function drawTime(dc, x, y, w, h, direction) {
-        var sp = (h > w) ? new DigitPainterVector(m_timeObj, x, y, w, h) : new DigitPainterFont(m_timeObj, x, y, w, h);
+    function drawTime(drawContext, x, y, w, h, direction) {
+        var sp = (h > w) ? 
+            new DigitPainterVectorLandscape(m_timeObj, drawContext, x, y, w, h) : 
+                getApp().m_forceVectorFont ? new DigitPainterVectorBook(m_timeObj, drawContext, x, y, w, h) :
+                                             new DigitPainterFont(m_timeObj, drawContext, x, y, w, h);
         var isBlink = (Time.now().value() & 1) != 0;
-        sp.drawAll(dc, direction, isBlink);
+        preDrawTime(sp, direction, isBlink);
+        sp.drawAllDigits(direction, isBlink);
+        postDrawTime(sp, direction, isBlink);
     }
 }
 class TimerSource extends BaseSource {
+    var m_timerState as Long = 0;
     function onCompute(info as Activity.Info) {
         m_timeObj.setTotalSeconds(info.timerTime / 1000);
         m_timerState = info.timerState;
     }
     function initialize() { BaseSource.initialize(Rez.Strings.timerTimeSource); }
-    function drawContent(dc, x, y, w, h) {
+    function drawContent(drawContext, x, y, w, h) {
         if (m_timerState == Activity.TIMER_STATE_OFF) {
             var font = Graphics.FONT_SYSTEM_LARGE;
             var txt = null;
-            if (h > 400) {
+            if (h > HALF_HEIGHT) {
                 txt = Ui.loadResource(Rez.Strings.notStartedLarge); //"Timer\n\nis not\n\nstarted\n\nyet"
-            } else if (h > 180) {
+            } else if (h == HALF_HEIGHT) {
                 txt = Ui.loadResource(Rez.Strings.notStartedMedium); //"Timer is not\n\nstarted yet"
-            } else if (w > 140) {
-                font = Graphics.FONT_SYSTEM_MEDIUM;
+            } else if (w > HALF_WIDTH) {
+                if (h < FOURTH_HEIGHT) { font = Graphics.FONT_SYSTEM_MEDIUM; }
             } else {
                 font = Graphics.FONT_SYSTEM_SMALL;
             }
-            if(txt == null) { txt = Ui.loadResource(Rez.Strings.notStarted); } //"Timer is not\nstarted yet"
-            dc.drawText(x + w/2, y + h/2, font, txt, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            if (txt == null) { txt = Ui.loadResource(Rez.Strings.notStarted); } //"Timer is not\nstarted yet"
+            drawContext.m_dc.drawText(x + w/2, y + h/2,
+                font, txt, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
             return;
         }
         var direction = TD_UP;
@@ -324,7 +425,7 @@ class TimerSource extends BaseSource {
             case Activity.TIMER_STATE_PAUSED:  direction = (TEST_PAUSE ? TD_STOPPED : TD_PAUSED); break;
             case Activity.TIMER_STATE_STOPPED: direction = (TEST_PAUSE ? TD_PAUSED : TD_STOPPED); break;
         }
-        drawTime(dc, x, y, w, h, direction);
+        drawTime(drawContext, x, y, w, h, direction);
     }
 }
 class ClockSource extends BaseSource {
@@ -338,14 +439,14 @@ class ClockSource extends BaseSource {
         if (minutes != 0) { ret += ":" + minutes.format("%d"); }
         return ret;
     }
-    function drawContent(dc, x, y, w, h) {
+    function drawContent(drawContext, x, y, w, h) {
         var ct = System.getClockTime();
         m_timeObj.m_hours = ct.hour + TEST_ADD_SECONDS / 3600;
         m_timeObj.m_minutes = ct.min;
         m_timeObj.m_seconds = ct.sec;
         m_timeObj.m_shouldShowHour = true;
         m_defLabelSuffix = FormatUTC(ct.timeZoneOffset / 60);
-        drawTime(dc, x, y, w, h, TD_UP);
+        drawTime(drawContext, x, y, w, h, TD_UP);
     }
 }
 class ElapsedSource extends BaseSource {
@@ -355,8 +456,8 @@ class ElapsedSource extends BaseSource {
         m_startTime = info.startTime;
     }
     function initialize() { BaseSource.initialize(Rez.Strings.elapsedTime); }
-    function drawContent(dc, x, y, w, h) {
-        drawTime(dc, x, y, w, h, (m_startTime == null) ? TD_PAUSED : TD_UP);
+    function drawContent(drawContext, x, y, w, h) {
+        drawTime(drawContext, x, y, w, h, (m_startTime == null) ? TD_PAUSED : TD_UP);
     }
 }
 class TimeLeftSource extends BaseSource {
@@ -370,11 +471,11 @@ class TimeLeftSource extends BaseSource {
     }
     function onCompute(info as Activity.Info) {
         if (TEST_REMAINS) {
-            if(m_distRemains > 0) {
-                m_elapsedDistance += 120;
-                m_distRemains -= 120;
+            m_currentSpeed = 1200;
+            if (m_distRemains > 0) {
+                m_elapsedDistance += m_currentSpeed;
+                m_distRemains -= m_currentSpeed;
             }
-            m_currentSpeed = 120;
         } else {
             m_distRemains = info.distanceToDestination; //or null
             m_currentSpeed = info.currentSpeed; //or null
@@ -387,6 +488,7 @@ class TimeLeftSource extends BaseSource {
             m_direction = TD_STOPPED;
             m_oldRemainSeconds = null;
             m_timeObj.setTotalSeconds(0);
+            m_defLabelSuffix = "";
         } else if (m_currentSpeed == null || m_currentSpeed < 2.0) {
             m_direction = TD_PAUSED;
         } else {
@@ -396,32 +498,68 @@ class TimeLeftSource extends BaseSource {
             m_timeObj.setTotalSeconds(newRemainSeconds.toLong());
             if (m_elapsedDistance + m_distRemains > 1) {
                 m_progress = m_elapsedDistance * 100 / (m_elapsedDistance + m_distRemains);
-                m_defLabelSuffix += (" " + (100 - m_progress) + " %");
+                m_defLabelSuffix = (" " + (100 - m_progress) + " %");
             }
         }
     }
-    function drawContent(dc, x, y, w, h) {
-        drawTime(dc, x, y, w, h, m_direction);
+    function drawContent(drawContext, x, y, w, h) {
+        drawTime(drawContext, x, y, w, h, m_direction);
+    }
+    function preDrawTime(sp, direction, isBlink) {
         if (m_elapsedDistance != null && m_distRemains != null) {
             //we have a progress in %
-            dc.drawRectangle(x + 1, y + h - 7, w - 2, 7);
-            dc.setPenWidth(3);
-            dc.fillRectangle(x + 1, y + h - 7, m_progress * (w - 2) / 100, 6);
-            dc.setPenWidth(1);
+            sp.m_drawContext.m_dc.setColor( 
+                (m_direction != TD_UP)   ? (sp.m_drawContext.m_inversed ? Graphics.COLOR_DK_GREEN : Graphics.COLOR_GREEN)
+                                         : (sp.m_drawContext.m_inversed ? Graphics.COLOR_DK_RED : Graphics.COLOR_RED),
+                Graphics.COLOR_TRANSPARENT);
+            sp.drawProgress(m_progress);
+            sp.m_drawContext.m_dc.setColor(sp.m_drawContext.m_foreColor, Graphics.COLOR_TRANSPARENT);
         }
+        BaseSource.preDrawTime(sp, direction, isBlink);
     }
 }
 //todo
 // Время круга (Lap Time)
+class LapTimeSource extends BaseSource {
+    function initialize() { BaseSource.initialize(Rez.Strings.lapTime); }
+}
 // Среднее время круга (Avg Lap Time)
+class AvgLapTimeSource extends BaseSource {
+    function initialize() { BaseSource.initialize(Rez.Strings.avgLapTime); }
+}
 // Время отставания (кр/зел?) от вирт. партнера (Time Behind)
-// Длительность тренировки - идет вниз, равно следующему, останавливается паузой тренировки, пустеет с отменой, если тренировка поэтапная, подсказку пишет (разминка, например) - Duration
+class TimeBehindSource extends BaseSource {
+    function initialize() { BaseSource.initialize(Rez.Strings.timeBehind); }
+}
+// Длительность тренировки - идет вниз, равно следующему, останавливается паузой тренировки, пустеет с отменой,
+//  если тренировка поэтапная, подсказку пишет (разминка, например) - Duration
+class WorkoutDurationSource extends BaseSource {
+    function initialize() { BaseSource.initialize(Rez.Strings.workoutDuration); }
+}
 // Ост. время тренировки - идет вниз, останавливается паузой тренировки, минусуется (__:__:__) с отменой Time to Go
+class TimeToGoSource extends BaseSource {
+    function initialize() { BaseSource.initialize(Rez.Strings.timeToGo); }
+}
 // Время этапа тренировки - идет вверх, останавливается паузой тренировки, минусуется (__:__:__) с отменой Step Time
+class StepTimeSource extends BaseSource {
+    /*var m_startTime as Time.Moment = null;
+    function onCompute(info as Activity.Info) {
+        m_timeObj.setTotalSeconds(info.elapsedTime / 1000);
+        m_startTime = info.startTime;
+    }*/
 /*Activity.getCurrentWorkoutStep() as Activity.WorkoutStepInfo 
 .step = Activity.WorkoutStep or Activity.WorkoutIntervalStep
  WorkoutStep: .durationValue при .step.durationType=WORKOUT_STEP_DURATION_TIME 
  WorkoutIntervalStep .ActiveStep/.RestStep*/
+    function initialize() { BaseSource.initialize(Rez.Strings.stepTime); }
+    /*function drawContent(dc, x, y, w, h) {
+        drawTime(dc, x, y, w, h, (m_startTime == null) ? TD_PAUSED : TD_UP);
+    }*/
+}
+// Время восстановления Time To Recovery
+class TimeToRecoverySource extends BaseSource {
+    function initialize() { BaseSource.initialize(Rez.Strings.timeToRecovery); }
+}
 
 class YaTimeFieldView extends Ui.DataField {
     var m_app = Application.getApp();
@@ -447,55 +585,60 @@ class YaTimeFieldView extends Ui.DataField {
     function onUpdate(dc) {
         var foreColor = Graphics.COLOR_WHITE;
         var backColor = getBackgroundColor();
+        var inversed = true;
         if (backColor != Graphics.COLOR_BLACK) {
             foreColor = Graphics.COLOR_BLACK;
+            inversed = false;
         }
         dc.setColor(foreColor, backColor);
+        dc.setAntiAlias(m_app.m_antiAliasing);
         dc.clear();
+        dc.setColor(foreColor, Graphics.COLOR_TRANSPARENT);
 
         var w = dc.getWidth();
         var h = dc.getHeight();
 
         //как можно больше полей из m_fieldSources упихать в данное нам место
         //не отказываясь от большого шрифта
-        if (w < 150 || m_fieldSourcesCnt == 1) {
-            //самый простой случай - 140х93 и/или только одно поле
-            m_fieldSources[0].onUpdate(dc, 0, 0, w, h, calcLabel(0));
-        } else if (h  < 150) {
-            //тут вместим оба
-            m_fieldSources[0].onUpdate(dc, 0, 0, w/2 - 1, h, calcLabel(0));
-            m_fieldSources[1].onUpdate(dc, w/2 + 1, 0, w/2 - 1, h, calcLabel(1));
-            dc.drawLine(w/2, 0, w/2, h); //vert
-        } else if (h  < 240) {
-            //все влезут
-            if (m_fieldSourcesCnt == 4) { //2x2
-                m_fieldSources[0].onUpdate(dc, 0, 0, w/2 - 1, h/2 - 1, calcLabel(0));
-                m_fieldSources[1].onUpdate(dc, w/2 + 1, 0, w/2 - 1, h/2 - 1, calcLabel(1));
-                m_fieldSources[2].onUpdate(dc, 0, h/2 + 1, w/2 - 1, h/2 - 1, calcLabel(2));
-                m_fieldSources[3].onUpdate(dc, w/2 + 1, h/2 + 1, w/2 - 1, h/2 - 1, calcLabel(3));
-                dc.drawLine(w/2, 0, w/2, h); //vert
-            } else if (m_fieldSourcesCnt == 3) { // 1+2
-                m_fieldSources[0].onUpdate(dc, 0, 0, w, h/2 - 1, calcLabel(0));
-                m_fieldSources[1].onUpdate(dc, 0, h/2 + 1, w/2 - 1, h/2 - 1, calcLabel(1));
-                m_fieldSources[2].onUpdate(dc, w/2 + 1, h/2 + 1, w/2 - 1, h/2 - 1, calcLabel(2));
-                dc.drawLine(w/2, h/2, w/2, h); //vert
-            } else { // 1+1
-                m_fieldSources[0].onUpdate(dc, 0, 0, w, h/2 - 1, calcLabel(0));
-                m_fieldSources[1].onUpdate(dc, 0, h/2 + 1, w, h/2 - 1, calcLabel(1));
-            }
-            dc.drawLine(0, h/2, w, h/2); //horz
-        } else { // несколько линий
+        var drawContext = new DrawContext(dc, foreColor, backColor, inversed);
+        if (w <= HALF_WIDTH || m_fieldSourcesCnt == 1) {
+            //самый простой случай - HALF_WIDTHх93 и/или только одно поле
+            m_fieldSources[0].onUpdate(drawContext, 0, 0, w, h, calcLabel(0));
+        } else if (h == FULL_HEIGHT) { // несколько линий
             for(var i = 0; i < m_fieldSourcesCnt; i++) {
                 var minY = i * h/m_fieldSourcesCnt;
                 var maxY = (i + 1) * h/m_fieldSourcesCnt;
-                m_fieldSources[i].onUpdate(dc, 0, minY + 1, w, h/m_fieldSourcesCnt - 1, calcLabel(i));
+                m_fieldSources[i].onUpdate(drawContext, 0, minY + 1, w, h/m_fieldSourcesCnt - 1, calcLabel(i));
                 if (i < m_fieldSourcesCnt - 1) { dc.drawLine(0, maxY, w, maxY); } //horz
             }
+        } else if (h >= THIRD_HEIGHT || (h >= FOURTH_HEIGHT && !m_app.m_fieldCaptionVisible)) {
+            //все влезут
+            if (m_fieldSourcesCnt == 4) { //2x2
+                m_fieldSources[0].onUpdate(drawContext, 0, 0, w/2 - 1, h/2 - 1, calcLabel(0));
+                m_fieldSources[1].onUpdate(drawContext, w/2 + 1, 0, w/2 - 1, h/2 - 1, calcLabel(1));
+                m_fieldSources[2].onUpdate(drawContext, 0, h/2 + 1, w/2 - 1, h/2 - 1, calcLabel(2));
+                m_fieldSources[3].onUpdate(drawContext, w/2 + 1, h/2 + 1, w/2 - 1, h/2 - 1, calcLabel(3));
+                dc.drawLine(w/2, 0, w/2, h); //vert
+            } else if (m_fieldSourcesCnt == 3) { // 1+2
+                m_fieldSources[0].onUpdate(drawContext, 0, 0, w, h/2 - 1, calcLabel(0));
+                m_fieldSources[1].onUpdate(drawContext, 0, h/2 + 1, w/2 - 1, h/2 - 1, calcLabel(1));
+                m_fieldSources[2].onUpdate(drawContext, w/2 + 1, h/2 + 1, w/2 - 1, h/2 - 1, calcLabel(2));
+                dc.drawLine(w/2, h/2, w/2, h); //vert
+            } else { // 1+1
+                m_fieldSources[0].onUpdate(drawContext, 0, 0, w, h/2 - 1, calcLabel(0));
+                m_fieldSources[1].onUpdate(drawContext, 0, h/2 + 1, w, h/2 - 1, calcLabel(1));
+            }
+            dc.drawLine(0, h/2, w, h/2); //horz
+        } else {
+            //тут вместим 2
+            m_fieldSources[0].onUpdate(drawContext, 0, 0, w/2 - 1, h, calcLabel(0));
+            m_fieldSources[1].onUpdate(drawContext, w/2 + 1, 0, w/2 - 1, h, calcLabel(1));
+            dc.drawLine(w/2, 0, w/2, h); //vert
         }
     }
     function rebuildSources() {
         var j = 0;
-        for(var i = 0; i < SK_CNT; i++) {
+        for(var i = 0; i < m_app.m_fieldSources.size(); i++) {
             var newSrc = sourceFactory(m_app.m_fieldSources[i]);
             if (newSrc != null) {
                m_fieldSources[j] = newSrc;
@@ -507,21 +650,28 @@ class YaTimeFieldView extends Ui.DataField {
             j++;
         }
         m_fieldSourcesCnt = j;
-        for(; j < SK_CNT; j++ ) {
+        for(; j < m_app.m_fieldSources.size(); j++ ) {
             m_fieldSources[j] = null;
         }
     }
     function sourceFactory(i) {
         switch(i) {
-            case SK_timerTime:   return new TimerSource();
-            case SK_clockTime:   return new ClockSource();
-            case SK_elapsedTime: return new ElapsedSource();
-            case SK_timeLeft:    return new TimeLeftSource();
-            default:             return null;
+            case SK_timerTime:       return new TimerSource();
+            case SK_clockTime:       return new ClockSource();
+            case SK_elapsedTime:     return new ElapsedSource();
+            case SK_timeLeft:        return new TimeLeftSource();
+            case SK_lapTime:         return new LapTimeSource();
+            case SK_avgLapTime:      return new AvgLapTimeSource();
+            case SK_timeBehind:      return new TimeBehindSource();
+            case SK_workoutDuration: return new WorkoutDurationSource();
+            case SK_timeToGo:        return new TimeToGoSource();
+            case SK_stepTime:        return new StepTimeSource();
+            case SK_timeToRecovery:  return new TimeToRecoverySource();
+            default:                 return null;
         }
     }
     function compute(info as Activity.Info) {
-        for(var i = 0; i < SK_CNT; i++) {
+        for(var i = 0; i < m_app.m_fieldSources.size(); i++) {
             var src = m_fieldSources[i];
             if (src == null) { break; }
             src.onCompute(info);
