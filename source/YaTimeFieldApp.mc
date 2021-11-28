@@ -7,10 +7,10 @@ import Toybox.Application.Properties;
 class YaTimeFieldApp extends Application.AppBase {
     function initialize() {
         AppBase.initialize();
-        storeSetting("appVersion", "27.11.2021"); //change it here (the only place)
+        storeSetting("appVersion", "29.11.2021"); //change it here (the only place)
         readAllSettings();
     }
-    function storeSetting(name as String, value) as Void {
+    function storeSetting(name as String, value as Numeric or Boolead or String) as Void {
         try {
             if (Application has :Storage) {
                 Properties.setValue(name, value);
@@ -21,7 +21,7 @@ class YaTimeFieldApp extends Application.AppBase {
             Sys.println("storeSetting exception: " + ex); 
         }
     }
-    function readSetting(name as String, defValue) as Numeric or Boolead or String or Null {
+    function readSetting(name as String, defValue as Numeric or Boolead or String) as Numeric or Boolead or String or Null {
         try {
             if (Application has :Storage) {
                 var ret = Properties.getValue(name);

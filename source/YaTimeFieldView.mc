@@ -1,17 +1,18 @@
 import Toybox.Activity;
 import Toybox.Lang;
 import Toybox.Time;
+using Toybox.Time.Gregorian;
 using Toybox.WatchUi as Ui;
+using Toybox.System as Sys;
 
 //для тестирования (в релизе поставить всё по 0)
-const TEST_ADD_SECONDS = 0;  // увеличить отображаемое время, чтобы отработал алгоритм показа часов, например
-const TEST_PAUSE = false;    // показывать символ паузы вместо символа "стоп" поля timerTime
-const TEST_REMAINS = false;  // тест прогноза времени финиша
-const TEST_RECTS = false;    // тест вычислений координат
+const TEST_ADD_SECONDS as Long = 0;     // увеличить отображаемое время, чтобы отработал алгоритм показа часов, например
+const TEST_REMAINS as Boolean = true;   // тест прогноза времени финиша
+const TEST_RECTS as Boolean = false;    // тест вычислений координат
 
 enum SourceKind { SK_timerTime, SK_clockTime, SK_elapsedTime, SK_timeLeft, SK_lapTime, SK_avgLapTime, SK_timeBehind, SK_workoutDuration,
     SK_timeToGo, SK_stepTime, SK_timeToRecovery }
-enum TimeGrowingDirection { TD_UP, TD_DOWN, TD_PAUSED, TD_STOPPED }
+enum TimeGrowingDirection { TD_UNKNOWN, TD_UP, TD_DOWN, TD_PAUSED, TD_STOPPED }
 enum ArrowDirection { AD_UP, AD_DOWN, AD_LEFT, AD_RIGHT } // относительно текста времени
 enum WhereIsUp { 
     UP_IS_LEFT,   // стрелка вверх на самом деле указывает на левый бок книжно поставленного устройства (т.е. ландшафт+перевернуть)
@@ -27,7 +28,7 @@ enum Dims1030 { FULL_WIDTH = 282, HALF_WIDTH = 140, FULL_HEIGHT = 470, HALF_HEIG
 class TimeObj {
     var m_seconds as Long = 0, m_minutes as Long = 0, m_hours as Long = 0;
     var m_shouldShowHour as Boolean = false; //полезно, если 0 часов все-таки лучше нарисовать, чем откинуть (время суток, например)
-    function setTotalSeconds(totalSeconds as Long) {
+    function setTotalSeconds(totalSeconds as Long) as Void {
         totalSeconds += TEST_ADD_SECONDS;
         m_seconds = totalSeconds % 60;
         var totalMinutes = totalSeconds / 60;
@@ -37,30 +38,30 @@ class TimeObj {
 }
 
 class DrawContext {
-    var m_dc, m_foreColor, m_backColor, m_inversed;
-    function initialize(dc, foreColor, backColor, inversed) {
+    var m_dc as Graphics.Dc, m_foreColor as Long, m_backColor as Long, m_inversed as Boolean;
+    function initialize(dc as Graphics.Dc, foreColor as Long, backColor as Long, inversed as Boolean) as Void {
         m_dc = dc; m_foreColor = foreColor; m_backColor = backColor; m_inversed = inversed;
     }
 }
 
 class DigitPainterBase {
     var m_drawContext as DrawContext, m_direction as TimeGrowingDirection;
-    var m_x, m_y, m_w, m_h; //rectangle in field coordinates
+    var m_x as Long, m_y as Long, m_w as Long, m_h as Long; //rectangle in field coordinates
     var m_digitGap as Long, m_digitWidth as Long, m_curPosition as Long;
     var m_markSize as Long;
 
-    var m_timeObj as TimeObj, m_digits = 6, m_delimiters = 2;
+    var m_timeObj as TimeObj, m_digits as Long = 6, m_delimiters as Long = 2;
     var m_bPrintSeconds as Boolean = true;
     var m_bPrintHoursd as Boolean = true;
     var m_bPrintHours as Boolean = true;
 
-    function initialize(timeObj, drawContext, x, y, w, h) {
+    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) {
         m_timeObj = timeObj;
         m_drawContext = drawContext;
         m_x = x; m_y = y; m_w = w; m_h = h;
     }
-    function CalcArrowDirection(rotation) {
-        var ret = AD_UP;        
+    function CalcArrowDirection(rotation as WhereIsUp) as ArrowDirection {
+        var ret as ArrowDirection = AD_UP;
         switch(rotation) {
             case UP_IS_LEFT:
                 ret = (m_direction == TD_DOWN) ? AD_RIGHT : AD_LEFT;
@@ -74,9 +75,9 @@ class DigitPainterBase {
         }
         return ret;
     }
-    function drawDirectionMarks(cx, cy, half_dist, isBlink, rotation) {
+    function drawDirectionMarks(cx as Long, cy as Long, half_dist as Long, isBlink as Boolean, rotation as WhereIsUp) as Void {
         if (isBlink) { m_drawContext.m_dc.setPenWidth(3); }
-        var wingSize = m_markSize / 2;
+        var wingSize as Long = m_markSize / 2;
         if (m_direction == TD_UP || m_direction == TD_DOWN) {
             var arrowDirection = CalcArrowDirection(rotation);
             switch(arrowDirection) {
@@ -121,8 +122,8 @@ class DigitPainterBase {
         }
         if (isBlink) { m_drawContext.m_dc.setPenWidth(1); }
     }
-    function drawAllDigits(direction, isBlink) {
-        if(TEST_RECTS) {
+    function drawAllDigits(direction as ArrowDirection, isBlink as Boolean) as Void {
+        if (TEST_RECTS) {
             m_drawContext.m_dc.drawRectangle(m_x, m_y, m_w, m_h);
             m_drawContext.m_dc.drawLine(m_x, m_y, m_x + m_w, m_y + m_h);
         }
@@ -150,14 +151,14 @@ class DigitPainterBase {
             NotifySecondsHidden(); 
         }
     }
-    function drawProgress(percent) {
-        if(m_w > m_h) {
+    function drawProgress(percent as Long) as Void {
+        if (m_w > m_h) {
             m_drawContext.m_dc.fillRectangle(m_x + 1, m_y + 1, percent * (m_w - 2) / 100, m_h - 2);
         } else {
             m_drawContext.m_dc.fillRectangle(m_x + 1, m_y + 1, m_w - 2, percent * (m_h - 2) / 100);
         }
     }
-    function NotifySecondsHidden() {}
+    function NotifySecondsHidden() as Void {}
 }
 class DigitPainterVectorBase extends DigitPainterBase {
     //4x6 matrix
@@ -173,8 +174,8 @@ class DigitPainterVectorBase extends DigitPainterBase {
         8 => [[1,3, 0,2], [0,2, 0,1], [0,1, 1,0], [1,0, 3,0], [3,0, 4,1], [4,1, 4,2], [4,2, 3,3], [3,3, 1,3], [1,3, 0,4], [0,4, 0,5], [0,5, 1,6], [1,6, 3,6], [3,6, 4,5], [4,5, 4,4], [4,4, 3,3]], 
         9 => [[1,0, 2,0], [2,0, 4,2], [4,2, 4,5], [4,5, 3,6], [3,6, 1,6], [1,6, 0,5], [0,5, 0,4], [0,4, 1,3], [1,3, 4,3]]
     };
-    var m_kx, m_ky, m_penWidth;
-    function initialize(timeObj, drawContext, x, y, w, h) {
+    var m_kx as Long, m_ky as Long, m_penWidth as Long;
+    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) {
         DigitPainterBase.initialize(timeObj, drawContext, x, y, w, h);
 
         if (m_timeObj.m_hours == 0 && !m_timeObj.m_shouldShowHour) {
@@ -187,12 +188,12 @@ class DigitPainterVectorBase extends DigitPainterBase {
             m_bPrintHoursd = false;
         }
     }
-    function CalcDigitWidth(space) {
+    function CalcDigitWidth(space as Long) as Void {
         m_digitWidth = (space - m_digitGap * (2 + m_digits / 2 + 2 * m_delimiters) - m_delimiters * m_markSize + m_digits / 2 /*anti-round*/) / m_digits;
     }
 }
 class DigitPainterVectorBook extends DigitPainterVectorBase {
-    function initialize(timeObj, drawContext, x, y, w, h) {
+    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) {
         if (w <= HALF_WIDTH) {
             m_markSize = 6;
             m_penWidth = 5;
@@ -208,44 +209,44 @@ class DigitPainterVectorBook extends DigitPainterVectorBase {
         m_ky = (m_h - 2 * m_digitGap) / 6;
         m_curPosition = m_digitGap + m_x;
 
-        if(m_digitWidth / m_penWidth < 2) {
+        if (m_digitWidth / m_penWidth < 2) {
             m_penWidth = m_digitWidth / 2;
         }
     }
-    function drawDigit(digit as Number) {
+    function drawDigit(digit as Number) as Void {
         m_drawContext.m_dc.setPenWidth(m_penWidth);
         if (digit < 0 || digit > 9) { digit = 0; }
         var lines = SegmentDict[digit.toNumber()];
         for(var i = 0; i < lines.size(); i++) {
             //each line is [x1, y1, x2, y2] in relative [0..4, 0..6] space
             var line = lines[i];
-            var x1 = m_curPosition + m_kx * line[0] + 1; var x2 = m_curPosition + m_kx * line[2] + 1;
-            var y1 = m_y + m_h - m_digitGap - m_ky * line[1]; var y2 = m_y + m_h - m_ky * line[3] - m_digitGap;
+            var x1 as Long = m_curPosition + m_kx * line[0] + 1; var x2 as Long = m_curPosition + m_kx * line[2] + 1;
+            var y1 as Long = m_y + m_h - m_digitGap - m_ky * line[1]; var y2 as Long = m_y + m_h - m_ky * line[3] - m_digitGap;
             m_drawContext.m_dc.drawLine(x1, y1, x2, y2);
         }
         m_drawContext.m_dc.setPenWidth(1);
         m_curPosition += (m_digitWidth + m_digitGap);
-        if(TEST_RECTS) {
+        if (TEST_RECTS) {
             m_drawContext.m_dc.drawRectangle(m_curPosition, m_y, m_curPosition, m_y + m_w);
         }
     }
-    function drawDelimiter(isBlink) {
-        var cy = m_y + m_h / 2, cx = m_curPosition + m_markSize / 2;
+    function drawDelimiter(isBlink as Boolean) as Void {
+        var cy as Long = m_y + m_h / 2, cx as Long = m_curPosition + m_markSize / 2;
         drawDirectionMarks(cx, cy, m_h / 10, isBlink, UP_NORMAL);
         m_curPosition += (m_markSize + m_digitGap);
     }
 }
 class DigitPainterVectorLandscape extends DigitPainterVectorBase {
     var m_flipLandscape;
-    function drawProgress(percent) {
-        if(m_flipLandscape) {
-            var nonFilledSize = (100 - percent) * (m_h - 2) / 100;
+    function drawProgress(percent as Long) as Void {
+        if (m_flipLandscape) {
+            var nonFilledSize as Long = (100 - percent) * (m_h - 2) / 100;
             m_drawContext.m_dc.fillRectangle(m_x + 1, nonFilledSize + m_y + 1, m_w - 2, m_h - 2 - nonFilledSize);
         } else {
             DigitPainterVectorBase.drawProgress(percent);
         }
     }
-    function initialize(timeObj, drawContext, x, y, w, h) {
+    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) {
         m_flipLandscape = getApp().m_flipLandscape;
         m_digitGap = w / 17;
         m_penWidth = m_digitGap / 2;
@@ -257,14 +258,14 @@ class DigitPainterVectorLandscape extends DigitPainterVectorBase {
         m_kx = (m_w - 2 * m_digitGap) / 6;
         m_curPosition = m_digitGap + m_y;
     }
-    function drawDigit(digit as Number) {
+    function drawDigit(digit as Number) as Void {
         m_drawContext.m_dc.setPenWidth(m_penWidth);
         if (digit < 0 || digit > 9) { digit = 0; }
         var lines = SegmentDict[digit.toNumber()];
-        for(var i = 0; i < lines.size(); i++) {
+        for(var i as Long = 0; i < lines.size(); i++) {
             //each line is [x1, y1, x2, y2] in relative [0..4, 0..6] space
             var line = lines[i];
-            var x1, y1, x2, y2;
+            var x1 as Long, y1 as Long, x2 as Long, y2 as Long;
             if (m_flipLandscape) {
                 x1 = m_w + m_x - m_kx * line[1] - m_digitGap - m_penWidth / 3; x2 = m_w + m_x - m_kx * line[3] - m_digitGap - m_penWidth / 3;
                 y1 = 2 * m_y + m_h - m_curPosition - m_ky * line[0] - 1; y2 = 2 * m_y + m_h - m_curPosition - m_ky * line[2] - 1;
@@ -276,12 +277,12 @@ class DigitPainterVectorLandscape extends DigitPainterVectorBase {
         }
         m_drawContext.m_dc.setPenWidth(1);
         m_curPosition += (m_digitWidth + m_digitGap);
-        if(TEST_RECTS) {
+        if (TEST_RECTS) {
             m_drawContext.m_dc.drawRectangle(m_x, m_curPosition, m_x + m_w, m_curPosition);
         }
     }
-    function drawDelimiter(isBlink) {
-        var cx = m_x + m_w / 2, cy, rotation;
+    function drawDelimiter(isBlink as Boolean) as Void {
+        var cx as Long = m_x + m_w / 2, cy as Long, rotation as WhereIsUp;
         if (m_flipLandscape) {
             cy = 2 * m_y + m_h - m_curPosition - m_markSize / 2;
             rotation = UP_IS_LEFT;
@@ -295,7 +296,7 @@ class DigitPainterVectorLandscape extends DigitPainterVectorBase {
 }
 class DigitPainterFont extends DigitPainterBase {
     var m_font = Graphics.FONT_SYSTEM_NUMBER_THAI_HOT;
-    function initialize(timeObj, drawContext, x, y, w, h) {
+    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) {
         DigitPainterBase.initialize(timeObj, drawContext, x, y, w, h);
         if (w <= HALF_WIDTH) {
             m_markSize = 6;
@@ -323,7 +324,7 @@ class DigitPainterFont extends DigitPainterBase {
                 m_digitGap = 1;
             }
         } else {
-            if(h < B3_HEIGHT) {
+            if (h < B3_HEIGHT) {
                 m_font = Graphics.FONT_SYSTEM_NUMBER_HOT;
                 m_digitWidth = 29;
                 m_digitGap = 2;
@@ -334,21 +335,21 @@ class DigitPainterFont extends DigitPainterBase {
                 m_markSize = 8;
             }
         }
-        var need_x = m_digitWidth * m_digits + m_digitGap * (2 + m_digits / 2 + 2 * m_delimiters) + m_delimiters * (m_markSize + 7);
+        var need_x as Long = m_digitWidth * m_digits + m_digitGap * (2 + m_digits / 2 + 2 * m_delimiters) + m_delimiters * (m_markSize + 7);
         m_curPosition = x + (w - need_x) / 2 + m_digitGap; //center!
     }
-    function drawDigit(digit as Number) {
+    function drawDigit(digit as Number) as Void {
         if (digit < 0 || digit > 9) { digit = 0; }
         m_drawContext.m_dc.drawText(m_curPosition + m_digitWidth / 2, m_y + m_h / 2 + m_digitWidth / 7, m_font, digit.format("%d"), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         m_curPosition += (m_digitWidth + m_digitGap);
-        if(TEST_RECTS) {
+        if (TEST_RECTS) {
             m_drawContext.m_dc.drawRectangle(m_curPosition, m_y, m_curPosition, m_y + m_w);
         }
     }
-    function NotifySecondsHidden() {
+    function NotifySecondsHidden() as Void {
         m_drawContext.m_dc.drawRectangle(m_curPosition - m_digitGap, m_y + m_h / 2 - m_digitWidth / 7, 3, 3);
     }
-    function drawDelimiter(isBlink) {
+    function drawDelimiter(isBlink as Boolean) as Void {
         var cx = m_curPosition + m_markSize / 2 + 3, cy = m_y + m_h / 2;
         drawDirectionMarks(cx, cy, m_digitWidth / 6, isBlink, UP_NORMAL);
         m_curPosition += (m_markSize + m_digitGap + 6);
@@ -356,26 +357,31 @@ class DigitPainterFont extends DigitPainterBase {
 }
 
 class BaseSource {
-    var m_defLabelId as String, m_defLabelSuffix = "";
-    var m_timeObj = new TimeObj();
+    var m_defLabelId as String, m_defLabelSuffix as String = "";
+    var m_timeObj as TimeObj = new TimeObj();
+    var m_direction as TimeGrowingDirection = TD_UNKNOWN;
 
-    function initialize(labelId) { m_defLabelId = labelId; }
-    function calcLabel(fieldCaption) as String {
+    function initialize(labelId as Long) { m_defLabelId = labelId; }
+    function calcLabel(fieldCaption as String) as String {
         if (fieldCaption.length() == 0) {
             fieldCaption = Ui.loadResource(m_defLabelId) + m_defLabelSuffix;
         }
         return fieldCaption;
     }
-    function onCompute(info as Activity.Info) {}
-    function preDrawTime(sp, direction, isBlink) {}
-    function postDrawTime(sp, direction, isBlink) {}
-    function drawContent(drawContext, x, y, w, h) {
-        drawContext.m_dc.fillRoundedRectangle(x + 1, y + 1, w - 2, h - 2, 5);
+    function onCompute(info as Activity.Info) as Void {}
+    function onTimerLap() as Void {}
+    function preDrawTime(painter as DigitPainterBase, direction as ArrowDirection, isBlink as Boolean) as Void {}
+    function postDrawTime(painter as DigitPainterBase, direction as ArrowDirection, isBlink as Boolean) as Void {}
+    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
+        var txt as String = "not impl";
+        drawContext.m_dc.drawText(x + w/2, y + h/2,
+            Graphics.FONT_SYSTEM_XTINY, txt, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        drawContext.m_dc.drawRoundedRectangle(x + 1, y + 1, w - 2, h - 2, 5);
     }
-    function onUpdate(drawContext, x, y, w, h, label) {
+    function onUpdate(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long, label as String) as Void {
         if (label.length()) {
             drawContext.m_dc.drawText(x + 5, y, Graphics.FONT_SYSTEM_XTINY, label, Graphics.TEXT_JUSTIFY_LEFT);
-            var labelHeight = drawContext.m_dc.getFontHeight(Graphics.FONT_SYSTEM_XTINY);
+            var labelHeight as Long = drawContext.m_dc.getFontHeight(Graphics.FONT_SYSTEM_XTINY);
             y += labelHeight;
             h -= labelHeight;
         }
@@ -383,28 +389,41 @@ class BaseSource {
         drawContent(drawContext, x, y, w, h);
         //drawContext.m_dc.clearClip();
     }
-    function drawTime(drawContext, x, y, w, h, direction) {
-        var sp = (h > w) ? 
+    function drawTime(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long, direction as ArrowDirection) as Void {
+        var p as DigitPainterBase = (h > w) ? 
             new DigitPainterVectorLandscape(m_timeObj, drawContext, x, y, w, h) : 
                 getApp().m_forceVectorFont ? new DigitPainterVectorBook(m_timeObj, drawContext, x, y, w, h) :
                                              new DigitPainterFont(m_timeObj, drawContext, x, y, w, h);
-        var isBlink = (Time.now().value() & 1) != 0;
-        preDrawTime(sp, direction, isBlink);
-        sp.drawAllDigits(direction, isBlink);
-        postDrawTime(sp, direction, isBlink);
+        var isBlink as Boolean = (Time.now().value() & 1) != 0;
+        preDrawTime(p, direction, isBlink);
+        p.drawAllDigits(direction, isBlink);
+        postDrawTime(p, direction, isBlink);
     }
 }
 class TimerSource extends BaseSource {
-    var m_timerState as Long = 0;
-    function onCompute(info as Activity.Info) {
+    function onCompute(info as Activity.Info) as Void {
         m_timeObj.setTotalSeconds(info.timerTime / 1000);
-        m_timerState = info.timerState;
+        m_direction = ActInfoToDirection(info);
+        if (info.startTime != null) {
+            var gi as Gregorian.Info = Gregorian.info(info.startTime, Time.FORMAT_MEDIUM);
+            m_defLabelSuffix = Lang.format(" @$1$:$2$", [ gi.hour, gi.min ]);
+            return;
+        }
+        m_defLabelSuffix = "";
     }
-    function initialize() { BaseSource.initialize(Rez.Strings.timerTimeSource); }
-    function drawContent(drawContext, x, y, w, h) {
-        if (m_timerState == Activity.TIMER_STATE_OFF) {
-            var font = Graphics.FONT_SYSTEM_LARGE;
-            var txt = null;
+    function initialize(labelId as Long) { BaseSource.initialize(labelId); }
+    function ActInfoToDirection(info as Activity.Info) as TimeGrowingDirection {
+        if (info == null) { return TD_STOPPED; }
+        var ts as Long = info.timerState;
+        if (ts == null || ts == Activity.TIMER_STATE_OFF) { return TD_UNKNOWN; }
+        if (ts == Activity.TIMER_STATE_STOPPED) { return TD_STOPPED; }
+        if (ts == Activity.TIMER_STATE_PAUSED) { return TD_PAUSED; }
+        return TD_UP;
+    }
+    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
+        if (m_direction == TD_UNKNOWN) {
+            var font as Long = Graphics.FONT_SYSTEM_LARGE;
+            var txt as String = null;
             if (h > HALF_HEIGHT) {
                 txt = Ui.loadResource(Rez.Strings.notStartedLarge); //"Timer\n\nis not\n\nstarted\n\nyet"
             } else if (h == HALF_HEIGHT) {
@@ -419,28 +438,22 @@ class TimerSource extends BaseSource {
                 font, txt, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
             return;
         }
-        var direction = TD_UP;
-        switch(m_timerState) {
-            //case Activity.TIMER_STATE_ON:
-            case Activity.TIMER_STATE_PAUSED:  direction = (TEST_PAUSE ? TD_STOPPED : TD_PAUSED); break;
-            case Activity.TIMER_STATE_STOPPED: direction = (TEST_PAUSE ? TD_PAUSED : TD_STOPPED); break;
-        }
-        drawTime(drawContext, x, y, w, h, direction);
+        drawTime(drawContext, x, y, w, h, m_direction);
     }
 }
 class ClockSource extends BaseSource {
-    function initialize() { BaseSource.initialize(Rez.Strings.clockTime); }
-    function FormatUTC(offMinutes) as String {
+    function initialize() as Void { BaseSource.initialize(Rez.Strings.clockTime); }
+    function FormatUTC(offMinutes as Long) as String {
         var ret as String;
         ret = " UTC" + (offMinutes > 0 ? "+" : "-");
         if (offMinutes < 0) { offMinutes = -offMinutes; }
-        var minutes = offMinutes % 60;
+        var minutes as Long = offMinutes % 60;
         ret += (offMinutes / 60).format("%d");
         if (minutes != 0) { ret += ":" + minutes.format("%d"); }
         return ret;
     }
-    function drawContent(drawContext, x, y, w, h) {
-        var ct = System.getClockTime();
+    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
+        var ct as ClockTime = System.getClockTime();
         m_timeObj.m_hours = ct.hour + TEST_ADD_SECONDS / 3600;
         m_timeObj.m_minutes = ct.min;
         m_timeObj.m_seconds = ct.sec;
@@ -451,25 +464,35 @@ class ClockSource extends BaseSource {
 }
 class ElapsedSource extends BaseSource {
     var m_startTime as Time.Moment = null;
-    function onCompute(info as Activity.Info) {
-        m_timeObj.setTotalSeconds(info.elapsedTime / 1000);
+    function onCompute(info as Activity.Info) as Void {
         m_startTime = info.startTime;
+        if (info.elapsedTime != null) {
+            m_timeObj.setTotalSeconds(info.elapsedTime / 1000);
+            if (m_startTime != null) {
+                var gi as Gregorian.Info = Gregorian.info(m_startTime, Time.FORMAT_MEDIUM);
+                m_defLabelSuffix = Lang.format(" @$1$:$2$", [ gi.hour, gi.min ]);
+                return;
+            }
+        } else {
+            m_timeObj.setTotalSeconds(0);
+        }
+        m_defLabelSuffix = "";
     }
-    function initialize() { BaseSource.initialize(Rez.Strings.elapsedTime); }
-    function drawContent(drawContext, x, y, w, h) {
+    function initialize() as Void { BaseSource.initialize(Rez.Strings.elapsedTime); }
+    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
         drawTime(drawContext, x, y, w, h, (m_startTime == null) ? TD_PAUSED : TD_UP);
     }
 }
 class TimeLeftSource extends BaseSource {
-    var m_distRemains = null, m_elapsedDistance = null; //meters
-    var m_currentSpeed = null; //meters per second
-    var m_oldRemainSeconds = null;
-    var m_direction = TD_DOWN, m_progress = 0;
-    function initialize() {
+    var m_distRemains as Lang.Float = null, m_elapsedDistance as Lang.Float = null; //meters
+    var m_currentSpeed as Lang.Float = null; //meters per second
+    var m_oldRemainSeconds as Long = null;
+    var m_progress as Long = 0;
+    function initialize() as Void {
         BaseSource.initialize(Rez.Strings.timeLeft);
         if (TEST_REMAINS) { m_distRemains = 12000; m_elapsedDistance = 24000; }
     }
-    function onCompute(info as Activity.Info) {
+    function onCompute(info as Activity.Info) as Void {
         if (TEST_REMAINS) {
             m_currentSpeed = 1200;
             if (m_distRemains > 0) {
@@ -492,7 +515,7 @@ class TimeLeftSource extends BaseSource {
         } else if (m_currentSpeed == null || m_currentSpeed < 2.0) {
             m_direction = TD_PAUSED;
         } else {
-            var newRemainSeconds = m_distRemains / m_currentSpeed;
+            var newRemainSeconds as Long = m_distRemains / m_currentSpeed;
             if (m_oldRemainSeconds != null && newRemainSeconds >= m_oldRemainSeconds) { m_direction = TD_UP; }
             m_oldRemainSeconds = newRemainSeconds;
             m_timeObj.setTotalSeconds(newRemainSeconds.toLong());
@@ -502,70 +525,146 @@ class TimeLeftSource extends BaseSource {
             }
         }
     }
-    function drawContent(drawContext, x, y, w, h) {
+    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
         drawTime(drawContext, x, y, w, h, m_direction);
     }
-    function preDrawTime(sp, direction, isBlink) {
+    function preDrawTime(painter as DigitPainterBase, direction as ArrowDirection, isBlink as Boolean) as Void {
         if (m_elapsedDistance != null && m_distRemains != null) {
             //we have a progress in %
-            sp.m_drawContext.m_dc.setColor( 
-                (m_direction != TD_UP)   ? (sp.m_drawContext.m_inversed ? Graphics.COLOR_DK_GREEN : Graphics.COLOR_GREEN)
-                                         : (sp.m_drawContext.m_inversed ? Graphics.COLOR_DK_RED : Graphics.COLOR_RED),
+            painter.m_drawContext.m_dc.setColor( 
+                (m_direction != TD_UP)   ? (painter.m_drawContext.m_inversed ? Graphics.COLOR_DK_GREEN : Graphics.COLOR_GREEN)
+                                         : (painter.m_drawContext.m_inversed ? Graphics.COLOR_DK_RED : Graphics.COLOR_RED),
                 Graphics.COLOR_TRANSPARENT);
-            sp.drawProgress(m_progress);
-            sp.m_drawContext.m_dc.setColor(sp.m_drawContext.m_foreColor, Graphics.COLOR_TRANSPARENT);
+            painter.drawProgress(m_progress);
+            painter.m_drawContext.m_dc.setColor(painter.m_drawContext.m_foreColor, Graphics.COLOR_TRANSPARENT);
         }
-        BaseSource.preDrawTime(sp, direction, isBlink);
+        BaseSource.preDrawTime(painter, direction, isBlink);
     }
 }
-//todo
-// Время круга (Lap Time)
-class LapTimeSource extends BaseSource {
-    function initialize() { BaseSource.initialize(Rez.Strings.lapTime); }
+// Время круга (Lap Time) - недоступно в 1030, пытаемся догадаться
+class LapTimeSource extends TimerSource {
+    var m_laps as Long = 1;
+    var m_ticksCounted as Long = 0, m_lastTime as Long = 0;
+    var m_lastDirection as TimeGrowingDirection = TD_UNKNOWN;
+    function initialize() as Void { TimerSource.initialize(Rez.Strings.lapTime); }
+    function onTimerLap() as Void {
+        m_ticksCounted = 0;
+        m_lastTime = System.getTimer();
+        m_laps++;
+        m_defLabelSuffix = " #" + m_laps.toString();
+    }
+    function onCompute(info as Activity.Info) as Void {
+        m_direction = ActInfoToDirection(info);
+        var nowTicks as Long = System.getTimer();
+        switch (m_direction) {
+            case TD_UNKNOWN: 
+                m_ticksCounted = 0;
+                m_laps = 1;
+                m_defLabelSuffix = "";
+                break;
+            case TD_UP:
+                if(m_direction == m_lastDirection) {
+                    if (nowTicks - m_lastTime > 1500) { //бывают ли такие задержки?
+                        m_ticksCounted += 500;
+                    } else {
+                        m_ticksCounted += (nowTicks - m_lastTime);
+                    }
+                    m_lastTime = nowTicks;
+                } else { //500ms - OK?
+                    m_ticksCounted += 500;
+                }
+                break;
+        }
+        m_lastTime = nowTicks;
+        m_lastDirection = m_direction;
+        m_timeObj.setTotalSeconds(m_ticksCounted / 1000);
+    }
 }
 // Среднее время круга (Avg Lap Time)
-class AvgLapTimeSource extends BaseSource {
-    function initialize() { BaseSource.initialize(Rez.Strings.avgLapTime); }
+class AvgLapTimeSource extends TimerSource {
+    var m_laps as Long = 1;
+    var m_lastValue as Long = 0;
+    function initialize() as Void { TimerSource.initialize(Rez.Strings.avgLapTime); }
+    function onTimerLap() as Void {
+        m_laps++;
+        m_defLabelSuffix = " @" + m_laps.toString();
+    }
+    function onCompute(info as Activity.Info) as Void {
+        m_direction = ActInfoToDirection(info);
+        switch (m_direction) {
+            case TD_UNKNOWN: 
+                m_laps = 1;
+                m_defLabelSuffix = "";
+                m_timeObj.setTotalSeconds(0);
+                break;
+            case TD_UP:
+                var newValue as Long = info.timerTime / m_laps / 1000;
+                if (m_lastValue > newValue) { m_direction = TD_DOWN; }
+                m_timeObj.setTotalSeconds(newValue);
+                m_lastValue = newValue;
+                break;
+        }
+    }
 }
-// Время отставания (кр/зел?) от вирт. партнера (Time Behind)
+// Время отставания (кр/зел?) от вирт. партнера (Time Behind) - не реализовано в IQ
 class TimeBehindSource extends BaseSource {
-    function initialize() { BaseSource.initialize(Rez.Strings.timeBehind); }
+    function initialize() as Void { BaseSource.initialize(Rez.Strings.timeBehind); }
 }
 // Длительность тренировки - идет вниз, равно следующему, останавливается паузой тренировки, пустеет с отменой,
 //  если тренировка поэтапная, подсказку пишет (разминка, например) - Duration
 class WorkoutDurationSource extends BaseSource {
-    function initialize() { BaseSource.initialize(Rez.Strings.workoutDuration); }
+    function initialize() as Void { BaseSource.initialize(Rez.Strings.workoutDuration); }
 }
 // Ост. время тренировки - идет вниз, останавливается паузой тренировки, минусуется (__:__:__) с отменой Time to Go
 class TimeToGoSource extends BaseSource {
-    function initialize() { BaseSource.initialize(Rez.Strings.timeToGo); }
+    function initialize() as Void { BaseSource.initialize(Rez.Strings.timeToGo); }
 }
 // Время этапа тренировки - идет вверх, останавливается паузой тренировки, минусуется (__:__:__) с отменой Step Time
 class StepTimeSource extends BaseSource {
-    /*var m_startTime as Time.Moment = null;
-    function onCompute(info as Activity.Info) {
-        m_timeObj.setTotalSeconds(info.elapsedTime / 1000);
-        m_startTime = info.startTime;
+    /*var m_lastTime as Long;
+    function onCompute(info as Activity.Info) as Void {
+        var stepObj = Activity.getCurrentWorkoutStep(); //(Lang.OperationNotAllowedException) — Thrown if called from a data field app
+        var curTime as Long = 0;
+        if (stepObj == null) {
+            m_direction = TD_STOPPED;
+        } else {
+            stepObj = stepObj.step;
+            if (stepObj instanceof Activity.WorkoutIntervalStep) {
+                stepObj = stepObj.activeStep; //what if RestStep is now on?
+            }
+            if (stepObj != null && stepObj instanceof Activity.WorkoutStep) {
+                if (stepObj.durationType == WORKOUT_STEP_DURATION_TIME) {
+                    curTime = stepObj.durationValue;
+                    if (m_lastTime > curTime) { m_direction = TD_DOWN;} 
+                    else if (m_lastTime < curTime) { m_direction = TD_UP;} 
+                    else { m_direction = TD_PAUSED;} 
+                }
+            }
+        }
+        m_timeObj.setTotalSeconds(curTime / 1000);
+        m_lastTime = curTime;
+    }
+    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
+        drawTime(drawContext, x, y, w, h, m_direction);
     }*/
-/*Activity.getCurrentWorkoutStep() as Activity.WorkoutStepInfo 
-.step = Activity.WorkoutStep or Activity.WorkoutIntervalStep
- WorkoutStep: .durationValue при .step.durationType=WORKOUT_STEP_DURATION_TIME 
- WorkoutIntervalStep .ActiveStep/.RestStep*/
-    function initialize() { BaseSource.initialize(Rez.Strings.stepTime); }
-    /*function drawContent(dc, x, y, w, h) {
-        drawTime(dc, x, y, w, h, (m_startTime == null) ? TD_PAUSED : TD_UP);
-    }*/
+    function initialize() as Void { BaseSource.initialize(Rez.Strings.stepTime); }
 }
-// Время восстановления Time To Recovery
+// Время восстановления Time To Recovery - need Api3.3.0, but for now 1030+ have 3.2.8
 class TimeToRecoverySource extends BaseSource {
-    function initialize() { BaseSource.initialize(Rez.Strings.timeToRecovery); }
+    function initialize() as Void { BaseSource.initialize(Rez.Strings.timeToRecovery); }
+    /*function onCompute(info as Activity.Info) as Void {
+        m_timeObj.setTotalSeconds(info.timeToRecovery / 1000);
+    }
+    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
+        drawTime(drawContext, x, y, w, h, TD_DOWN);
+    }*/
 }
 
 class YaTimeFieldView extends Ui.DataField {
-    var m_app = Application.getApp();
+    var m_app as YaTimeFieldApp= Application.getApp();
     var m_fieldSources = new [m_app.m_fieldSources.size()];
-    var m_fieldSourcesCnt = 0;
-    function calcLabel(i) as String {
+    var m_fieldSourcesCnt as Long = 0;
+    function calcLabel(i as Long) as String {
         var ret as String = "";
         if (m_app.m_fieldCaptionVisible) {
             var src = m_fieldSources[i];
@@ -578,11 +677,14 @@ class YaTimeFieldView extends Ui.DataField {
         }
         return ret;
     }
-    function initialize() {
+    function initialize() as Void {
         Ui.DataField.initialize();
         rebuildSources();
     }
-    function onUpdate(dc) {
+    function onUpdate(dc as Graphics.Dc) as Void {
+        try { onUpdateWorker(dc); } catch(ex) { Sys.println("onUpdate exception: " + ex); }
+    }
+    function onUpdateWorker(dc as Graphics.Dc) {
         var foreColor = Graphics.COLOR_WHITE;
         var backColor = getBackgroundColor();
         var inversed = true;
@@ -636,27 +738,31 @@ class YaTimeFieldView extends Ui.DataField {
             dc.drawLine(w/2, 0, w/2, h); //vert
         }
     }
-    function rebuildSources() {
-        var j = 0;
-        for(var i = 0; i < m_app.m_fieldSources.size(); i++) {
-            var newSrc = sourceFactory(m_app.m_fieldSources[i]);
-            if (newSrc != null) {
-               m_fieldSources[j] = newSrc;
-               j++;
+    function rebuildSources() as Void {
+        var j as Long = 0;
+        try {
+            for(var i as Long = 0; i < m_app.m_fieldSources.size(); i++) {
+                var newSrc as BaseSource = sourceFactory(m_app.m_fieldSources[i]);
+                if (newSrc != null) {
+                    m_fieldSources[j] = newSrc;
+                    j++;
+                }
             }
-        }
-        if (j == 0) {
-            m_fieldSources[j] = sourceFactory(0);
-            j++;
+            if (j == 0) {
+                m_fieldSources[j] = sourceFactory(0);
+                j++;
+            }
+        } catch(ex) {
+            Sys.println(j.toString() + ".rebuildSources exception: " + ex); 
         }
         m_fieldSourcesCnt = j;
         for(; j < m_app.m_fieldSources.size(); j++ ) {
             m_fieldSources[j] = null;
         }
     }
-    function sourceFactory(i) {
+    function sourceFactory(i as Long) as BaseSource {
         switch(i) {
-            case SK_timerTime:       return new TimerSource();
+            case SK_timerTime:       return new TimerSource(Rez.Strings.timerTimeSource);
             case SK_clockTime:       return new ClockSource();
             case SK_elapsedTime:     return new ElapsedSource();
             case SK_timeLeft:        return new TimeLeftSource();
@@ -670,11 +776,18 @@ class YaTimeFieldView extends Ui.DataField {
             default:                 return null;
         }
     }
-    function compute(info as Activity.Info) {
+    function compute(info as Activity.Info) as Void {
         for(var i = 0; i < m_app.m_fieldSources.size(); i++) {
             var src = m_fieldSources[i];
             if (src == null) { break; }
-            src.onCompute(info);
+            try { src.onCompute(info); } catch(ex) { Sys.println(i.toString() + ".compute exception: " + ex); }
+        }
+    }
+    function onTimerLap() as Void {
+        for(var i as Long = 0; i < m_app.m_fieldSources.size(); i++) {
+            var src as BaseSource = m_fieldSources[i];
+            if (src == null) { break; }
+            try { src.onTimerLap(); } catch(ex) { Sys.println(i.toString() + ".onTimerLap exception: " + ex); }
         }
     }
 }
