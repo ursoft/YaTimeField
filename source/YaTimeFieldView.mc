@@ -300,9 +300,8 @@ class DigitPainterFont extends DigitPainterBase {
         DigitPainterBase.initialize(timeObj, drawContext, x, y, w, h);
         if (w <= HALF_WIDTH) {
             m_markSize = 6;
-
             if (m_timeObj.m_hours > 9) { //no place for the seconds
-                m_bPrintSeconds = false;
+                m_bPrintSeconds = false; //small square
                 m_digits = 4;
                 m_delimiters = 1;
             } else if (m_timeObj.m_hours > 0 || m_timeObj.m_shouldShowHour) {
@@ -335,19 +334,22 @@ class DigitPainterFont extends DigitPainterBase {
                 m_markSize = 8;
             }
         }
-        var need_x as Numeric = m_digitWidth * m_digits + m_digitGap * (2 + m_digits / 2 + 2 * m_delimiters) + m_delimiters * (m_markSize + 7);
+        var need_x as Numeric = m_digitWidth * m_digits + m_digitGap * (2 + m_digits / 2 + 2 * m_delimiters) + m_delimiters * (m_markSize + 6);
         m_curPosition = x + (w - need_x) / 2 + m_digitGap; //center!
     }
     function drawDigit(digit as Number) as Void {
         if (digit < 0 || digit > 9) { digit = 0; }
         m_drawContext.m_dc.drawText(m_curPosition + m_digitWidth / 2, m_y + m_h / 2 + m_digitWidth / 7, m_font, digit.format("%d"), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         m_curPosition += (m_digitWidth + m_digitGap);
+        if (m_bPrintSeconds == false) {
+            m_curPosition--; // got some place for NotifySecondsHidden mark
+        }
         if (TEST_RECTS) {
             m_drawContext.m_dc.drawRectangle(m_curPosition, m_y, m_curPosition, m_y + m_w);
         }
     }
     function NotifySecondsHidden() as Void {
-        m_drawContext.m_dc.drawRectangle(m_curPosition - m_digitGap, m_y + m_h / 2 - m_digitWidth / 7, 3, 3);
+        m_drawContext.m_dc.drawRectangle(m_curPosition, m_y + m_h / 2 - m_digitWidth / 7, 3, 3);
     }
     function drawDelimiter(isBlink as Boolean) as Void {
         var cx = m_curPosition + m_markSize / 2 + 3, cy = m_y + m_h / 2;
@@ -687,7 +689,11 @@ class YaTimeFieldView extends Ui.DataField {
         rebuildSources();
     }
     function onUpdate(dc as Graphics.Dc) as Void {
-        try { onUpdateWorker(dc); } catch(ex) { Sys.println("onUpdate exception: " + ex); }
+        try { 
+            onUpdateWorker(dc); 
+        } catch(ex) { 
+            Sys.println("onUpdate exception: " + ex); // почему-то при отладке в IDE не показывает ничего интересного. Оставляем для production, чтобы одно поле не валило всех
+        }
     }
     function onUpdateWorker(dc as Graphics.Dc) {
         var foreColor = Graphics.COLOR_WHITE;
@@ -758,7 +764,7 @@ class YaTimeFieldView extends Ui.DataField {
                 j++;
             }
         } catch(ex) {
-            Sys.println(j.toString() + ".rebuildSources exception: " + ex); 
+            Sys.println(j.toString() + ".rebuildSources exception: " + ex);  // почему-то при отладке в IDE не показывает ничего интересного. Оставляем для production, чтобы одно поле не валило всех
         }
         m_fieldSourcesCnt = j;
         for(; j < m_app.m_fieldSources.size(); j++ ) {
@@ -786,14 +792,18 @@ class YaTimeFieldView extends Ui.DataField {
         for(var i = 0; i < m_app.m_fieldSources.size(); i++) {
             var src = m_fieldSources[i];
             if (src == null) { break; }
-            try { src.onCompute(info); } catch(ex) { Sys.println(i.toString() + ".compute exception: " + ex); }
+            try { src.onCompute(info); } catch(ex) {
+                Sys.println(i.toString() + ".compute exception: " + ex); // почему-то при отладке в IDE не показывает ничего интересного. Оставляем для production, чтобы одно поле не валило всех
+            }
         }
     }
     function onTimerLap() as Void {
         for(var i as Numeric = 0; i < m_app.m_fieldSources.size(); i++) {
             var src as BaseSource = m_fieldSources[i];
             if (src == null) { break; }
-            try { src.onTimerLap(); } catch(ex) { Sys.println(i.toString() + ".onTimerLap exception: " + ex); }
+            try { src.onTimerLap(); } catch(ex) {
+                Sys.println(i.toString() + ".onTimerLap exception: " + ex); // почему-то при отладке в IDE не показывает ничего интересного. Оставляем для production, чтобы одно поле не валило всех
+            }
         }
     }
 }
