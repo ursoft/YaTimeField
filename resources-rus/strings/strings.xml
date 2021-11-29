@@ -5,10 +5,11 @@
     <string id="fieldCaptionVisibleTitle">Показать заголовок поля: </string>
     <string id="noFieldSource">(нет)</string>
     <string id="fieldSourceTitle">Источник поля: </string>
-    <string id="timerTimeSource">Таймер</string>
+    <string id="timerTime">Таймер</string>
     <string id="clockTime">Время</string>
     <string id="elapsedTime">Истёкшее</string>
-    <string id="timeLeft">Осталось</string>
+    <string id="timeLeftFin">ETA.</string>
+    <string id="timeLeftNxt">ETA-</string>
     <string id="notStartedLarge">Таймер\n\nсейчас\n\nещё не\n\nзапущен</string>
     <string id="notStartedMedium">Таймер сейчас\n\nне запущен</string>
     <string id="notStarted">Таймер сейчас\nне запущен</string>
@@ -16,10 +17,12 @@
     <string id="forceVectorFontTitle">Всегда векторный шрифт: </string>
     <string id="lapTime">Время круга</string>
     <string id="avgLapTime">Ср. время круга</string>
-    <string id="timeBehind">Время отставания</string>
-    <string id="workoutDuration">Длит. трен.</string>
-    <string id="timeToGo">Ост. время трен.</string>
-    <string id="stepTime">Время этапа трен.</string>
-    <string id="timeToRecovery">Восстановление</string>
+    <string id="timeBehind">-Время отставания</string>
+    <string id="workoutDuration">-Длит. трен.</string>
+    <string id="timeToGo">-Ост. время трен.</string>
+    <string id="stepTime">-Время этапа трен.</string>
+    <string id="timeToRecovery">-Восстановление</string>
     <string id="antiAliasingTitle">Сглаживание: </string>
+    <string id="defNameOfDestination">Финишево</string>
+    <string id="defNameOfNextPoint">Промежутово</string>
 </strings>

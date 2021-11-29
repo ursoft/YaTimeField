@@ -33,65 +33,69 @@
         <setting propertyKey="@Properties.fieldSource1" title="@Strings.fieldSourceTitle">
             <settingConfig type="list" >
                 <listEntry value="-1">@Strings.noFieldSource</listEntry>
-                <listEntry value="0">@Strings.timerTimeSource</listEntry>
+                <listEntry value="0">@Strings.timerTime</listEntry>
                 <listEntry value="1">@Strings.clockTime</listEntry>
                 <listEntry value="2">@Strings.elapsedTime</listEntry>
-                <listEntry value="3">@Strings.timeLeft</listEntry>
-                <listEntry value="4">@Strings.lapTime</listEntry>
-                <listEntry value="5">@Strings.avgLapTime</listEntry>
-                <listEntry value="6">@Strings.timeBehind</listEntry>
-                <listEntry value="7">@Strings.workoutDuration</listEntry>
-                <listEntry value="8">@Strings.timeToGo</listEntry>
-                <listEntry value="9">@Strings.stepTime</listEntry>
-                <listEntry value="10">@Strings.timeToRecovery</listEntry>
+                <listEntry value="3">@Strings.timeLeftFin</listEntry>
+                <listEntry value="4">@Strings.timeLeftNxt</listEntry>
+                <listEntry value="5">@Strings.lapTime</listEntry>
+                <listEntry value="6">@Strings.avgLapTime</listEntry>
+                <listEntry value="7">@Strings.timeBehind</listEntry>
+                <listEntry value="8">@Strings.workoutDuration</listEntry>
+                <listEntry value="9">@Strings.timeToGo</listEntry>
+                <listEntry value="10">@Strings.stepTime</listEntry>
+                <listEntry value="11">@Strings.timeToRecovery</listEntry>
             </settingConfig>
         </setting>
         <setting propertyKey="@Properties.fieldSource2" title="@Strings.fieldSourceTitle">
             <settingConfig type="list" >
                 <listEntry value="-1">@Strings.noFieldSource</listEntry>
-                <listEntry value="0">@Strings.timerTimeSource</listEntry>
+                <listEntry value="0">@Strings.timerTime</listEntry>
                 <listEntry value="1">@Strings.clockTime</listEntry>
                 <listEntry value="2">@Strings.elapsedTime</listEntry>
-                <listEntry value="3">@Strings.timeLeft</listEntry>
-                <listEntry value="4">@Strings.lapTime</listEntry>
-                <listEntry value="5">@Strings.avgLapTime</listEntry>
-                <listEntry value="6">@Strings.timeBehind</listEntry>
-                <listEntry value="7">@Strings.workoutDuration</listEntry>
-                <listEntry value="8">@Strings.timeToGo</listEntry>
-                <listEntry value="9">@Strings.stepTime</listEntry>
-                <listEntry value="10">@Strings.timeToRecovery</listEntry>
+                <listEntry value="3">@Strings.timeLeftFin</listEntry>
+                <listEntry value="4">@Strings.timeLeftNxt</listEntry>
+                <listEntry value="5">@Strings.lapTime</listEntry>
+                <listEntry value="6">@Strings.avgLapTime</listEntry>
+                <listEntry value="7">@Strings.timeBehind</listEntry>
+                <listEntry value="8">@Strings.workoutDuration</listEntry>
+                <listEntry value="9">@Strings.timeToGo</listEntry>
+                <listEntry value="10">@Strings.stepTime</listEntry>
+                <listEntry value="11">@Strings.timeToRecovery</listEntry>
             </settingConfig>
         </setting>
         <setting propertyKey="@Properties.fieldSource3" title="@Strings.fieldSourceTitle">
             <settingConfig type="list" >
                 <listEntry value="-1">@Strings.noFieldSource</listEntry>
-                <listEntry value="0">@Strings.timerTimeSource</listEntry>
+                <listEntry value="0">@Strings.timerTime</listEntry>
                 <listEntry value="1">@Strings.clockTime</listEntry>
                 <listEntry value="2">@Strings.elapsedTime</listEntry>
-                <listEntry value="3">@Strings.timeLeft</listEntry>
-                <listEntry value="4">@Strings.lapTime</listEntry>
-                <listEntry value="5">@Strings.avgLapTime</listEntry>
-                <listEntry value="6">@Strings.timeBehind</listEntry>
-                <listEntry value="7">@Strings.workoutDuration</listEntry>
-                <listEntry value="8">@Strings.timeToGo</listEntry>
-                <listEntry value="9">@Strings.stepTime</listEntry>
-                <listEntry value="10">@Strings.timeToRecovery</listEntry>
+                <listEntry value="3">@Strings.timeLeftFin</listEntry>
+                <listEntry value="4">@Strings.timeLeftNxt</listEntry>
+                <listEntry value="5">@Strings.lapTime</listEntry>
+                <listEntry value="6">@Strings.avgLapTime</listEntry>
+                <listEntry value="7">@Strings.timeBehind</listEntry>
+                <listEntry value="8">@Strings.workoutDuration</listEntry>
+                <listEntry value="9">@Strings.timeToGo</listEntry>
+                <listEntry value="10">@Strings.stepTime</listEntry>
+                <listEntry value="11">@Strings.timeToRecovery</listEntry>
             </settingConfig>
         </setting>
         <setting propertyKey="@Properties.fieldSource4" title="@Strings.fieldSourceTitle">
             <settingConfig type="list" >
                 <listEntry value="-1">@Strings.noFieldSource</listEntry>
-                <listEntry value="0">@Strings.timerTimeSource</listEntry>
+                <listEntry value="0">@Strings.timerTime</listEntry>
                 <listEntry value="1">@Strings.clockTime</listEntry>
                 <listEntry value="2">@Strings.elapsedTime</listEntry>
-                <listEntry value="3">@Strings.timeLeft</listEntry>
-                <listEntry value="4">@Strings.lapTime</listEntry>
-                <listEntry value="5">@Strings.avgLapTime</listEntry>
-                <listEntry value="6">@Strings.timeBehind</listEntry>
-                <listEntry value="7">@Strings.workoutDuration</listEntry>
-                <listEntry value="8">@Strings.timeToGo</listEntry>
-                <listEntry value="9">@Strings.stepTime</listEntry>
-                <listEntry value="10">@Strings.timeToRecovery</listEntry>
+                <listEntry value="3">@Strings.timeLeftFin</listEntry>
+                <listEntry value="4">@Strings.timeLeftNxt</listEntry>
+                <listEntry value="5">@Strings.lapTime</listEntry>
+                <listEntry value="6">@Strings.avgLapTime</listEntry>
+                <listEntry value="7">@Strings.timeBehind</listEntry>
+                <listEntry value="8">@Strings.workoutDuration</listEntry>
+                <listEntry value="9">@Strings.timeToGo</listEntry>
+                <listEntry value="10">@Strings.stepTime</listEntry>
+                <listEntry value="11">@Strings.timeToRecovery</listEntry>
            </settingConfig>
         </setting>
     </settings>

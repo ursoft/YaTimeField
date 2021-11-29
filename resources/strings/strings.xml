@@ -5,10 +5,11 @@
     <string id="fieldCaptionVisibleTitle">Show YaTimeField Caption: </string>
     <string id="fieldSourceTitle">Field Source: </string>
     <string id="noFieldSource">(none)</string>
-    <string id="timerTimeSource">Timer</string>
+    <string id="timerTime">Timer</string>
     <string id="clockTime">Clock</string>
     <string id="elapsedTime">Elapsed Time</string>
-    <string id="timeLeft">Time Left</string>
+    <string id="timeLeftFin">ETA.</string>
+    <string id="timeLeftNxt">ETA-</string>
     <string id="notStartedLarge">Timer\n\nis not\n\nstarted\n\nyet</string>
     <string id="notStartedMedium">Timer is not\n\nstarted yet</string>
     <string id="notStarted">Timer is not\nstarted yet</string>
@@ -16,10 +17,12 @@
     <string id="forceVectorFontTitle">Force vector font: </string>
     <string id="lapTime">Lap Time</string>
     <string id="avgLapTime">Avg Lap Time</string>
-    <string id="timeBehind">Time Behind</string>
-    <string id="workoutDuration">Wrk. Duration</string>
-    <string id="timeToGo">Time To Go</string>
-    <string id="stepTime">Step Time</string>
-    <string id="timeToRecovery">To Recovery</string>
+    <string id="timeBehind">-Time Behind</string>
+    <string id="workoutDuration">-Wrk. Duration</string>
+    <string id="timeToGo">-Time To Go</string>
+    <string id="stepTime">-Step Time</string>
+    <string id="timeToRecovery">-To Recovery</string>
     <string id="antiAliasingTitle">Anti-aliased drawing: </string>
+    <string id="defNameOfDestination">Dest City</string>
+    <string id="defNameOfNextPoint">Next City</string>
 </strings>

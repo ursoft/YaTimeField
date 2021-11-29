@@ -7,10 +7,10 @@ using Toybox.System as Sys;
 
 //для тестирования (в релизе поставить всё по 0)
 const TEST_ADD_SECONDS as Long = 0;     // увеличить отображаемое время, чтобы отработал алгоритм показа часов, например
-const TEST_REMAINS as Boolean = true;   // тест прогноза времени финиша
+const TEST_REMAINS as Boolean = false;  // тест прогноза времени финиша
 const TEST_RECTS as Boolean = false;    // тест вычислений координат
 
-enum SourceKind { SK_timerTime, SK_clockTime, SK_elapsedTime, SK_timeLeft, SK_lapTime, SK_avgLapTime, SK_timeBehind, SK_workoutDuration,
+enum SourceKind { SK_timerTime, SK_clockTime, SK_elapsedTime, SK_timeLeftFin, SK_timeLeftNxt, SK_lapTime, SK_avgLapTime, SK_timeBehind, SK_workoutDuration,
     SK_timeToGo, SK_stepTime, SK_timeToRecovery }
 enum TimeGrowingDirection { TD_UNKNOWN, TD_UP, TD_DOWN, TD_PAUSED, TD_STOPPED }
 enum ArrowDirection { AD_UP, AD_DOWN, AD_LEFT, AD_RIGHT } // относительно текста времени
@@ -26,7 +26,7 @@ enum Dims1030 { FULL_WIDTH = 282, HALF_WIDTH = 140, FULL_HEIGHT = 470, HALF_HEIG
     /*FIFTH_HEIGHT = 92 or 93*/  }
 
 class TimeObj {
-    var m_seconds as Long = 0, m_minutes as Long = 0, m_hours as Long = 0;
+    var m_seconds as Numeric = 0, m_minutes as Numeric = 0, m_hours as Numeric = 0;
     var m_shouldShowHour as Boolean = false; //полезно, если 0 часов все-таки лучше нарисовать, чем откинуть (время суток, например)
     function setTotalSeconds(totalSeconds as Long) as Void {
         totalSeconds += TEST_ADD_SECONDS;
@@ -46,16 +46,16 @@ class DrawContext {
 
 class DigitPainterBase {
     var m_drawContext as DrawContext, m_direction as TimeGrowingDirection;
-    var m_x as Long, m_y as Long, m_w as Long, m_h as Long; //rectangle in field coordinates
-    var m_digitGap as Long, m_digitWidth as Long, m_curPosition as Long;
-    var m_markSize as Long;
+    var m_x as Numeric, m_y as Numeric, m_w as Numeric, m_h as Numeric; //rectangle in field coordinates
+    var m_digitGap as Numeric, m_digitWidth as Numeric, m_curPosition as Numeric;
+    var m_markSize as Numeric;
 
-    var m_timeObj as TimeObj, m_digits as Long = 6, m_delimiters as Long = 2;
+    var m_timeObj as TimeObj, m_digits as Numeric = 6, m_delimiters as Numeric = 2;
     var m_bPrintSeconds as Boolean = true;
     var m_bPrintHoursd as Boolean = true;
     var m_bPrintHours as Boolean = true;
 
-    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) {
+    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric) {
         m_timeObj = timeObj;
         m_drawContext = drawContext;
         m_x = x; m_y = y; m_w = w; m_h = h;
@@ -75,9 +75,9 @@ class DigitPainterBase {
         }
         return ret;
     }
-    function drawDirectionMarks(cx as Long, cy as Long, half_dist as Long, isBlink as Boolean, rotation as WhereIsUp) as Void {
+    function drawDirectionMarks(cx as Numeric, cy as Numeric, half_dist as Numeric, isBlink as Boolean, rotation as WhereIsUp) as Void {
         if (isBlink) { m_drawContext.m_dc.setPenWidth(3); }
-        var wingSize as Long = m_markSize / 2;
+        var wingSize as Numeric = m_markSize / 2;
         if (m_direction == TD_UP || m_direction == TD_DOWN) {
             var arrowDirection = CalcArrowDirection(rotation);
             switch(arrowDirection) {
@@ -151,7 +151,7 @@ class DigitPainterBase {
             NotifySecondsHidden(); 
         }
     }
-    function drawProgress(percent as Long) as Void {
+    function drawProgress(percent as Numeric) as Void {
         if (m_w > m_h) {
             m_drawContext.m_dc.fillRectangle(m_x + 1, m_y + 1, percent * (m_w - 2) / 100, m_h - 2);
         } else {
@@ -174,8 +174,8 @@ class DigitPainterVectorBase extends DigitPainterBase {
         8 => [[1,3, 0,2], [0,2, 0,1], [0,1, 1,0], [1,0, 3,0], [3,0, 4,1], [4,1, 4,2], [4,2, 3,3], [3,3, 1,3], [1,3, 0,4], [0,4, 0,5], [0,5, 1,6], [1,6, 3,6], [3,6, 4,5], [4,5, 4,4], [4,4, 3,3]], 
         9 => [[1,0, 2,0], [2,0, 4,2], [4,2, 4,5], [4,5, 3,6], [3,6, 1,6], [1,6, 0,5], [0,5, 0,4], [0,4, 1,3], [1,3, 4,3]]
     };
-    var m_kx as Long, m_ky as Long, m_penWidth as Long;
-    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) {
+    var m_kx as Numeric, m_ky as Numeric, m_penWidth as Numeric;
+    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric) {
         DigitPainterBase.initialize(timeObj, drawContext, x, y, w, h);
 
         if (m_timeObj.m_hours == 0 && !m_timeObj.m_shouldShowHour) {
@@ -188,12 +188,12 @@ class DigitPainterVectorBase extends DigitPainterBase {
             m_bPrintHoursd = false;
         }
     }
-    function CalcDigitWidth(space as Long) as Void {
+    function CalcDigitWidth(space as Numeric) as Void {
         m_digitWidth = (space - m_digitGap * (2 + m_digits / 2 + 2 * m_delimiters) - m_delimiters * m_markSize + m_digits / 2 /*anti-round*/) / m_digits;
     }
 }
 class DigitPainterVectorBook extends DigitPainterVectorBase {
-    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) {
+    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric) {
         if (w <= HALF_WIDTH) {
             m_markSize = 6;
             m_penWidth = 5;
@@ -220,8 +220,8 @@ class DigitPainterVectorBook extends DigitPainterVectorBase {
         for(var i = 0; i < lines.size(); i++) {
             //each line is [x1, y1, x2, y2] in relative [0..4, 0..6] space
             var line = lines[i];
-            var x1 as Long = m_curPosition + m_kx * line[0] + 1; var x2 as Long = m_curPosition + m_kx * line[2] + 1;
-            var y1 as Long = m_y + m_h - m_digitGap - m_ky * line[1]; var y2 as Long = m_y + m_h - m_ky * line[3] - m_digitGap;
+            var x1 as Numeric = m_curPosition + m_kx * line[0] + 1; var x2 as Numeric = m_curPosition + m_kx * line[2] + 1;
+            var y1 as Numeric = m_y + m_h - m_digitGap - m_ky * line[1]; var y2 as Numeric = m_y + m_h - m_ky * line[3] - m_digitGap;
             m_drawContext.m_dc.drawLine(x1, y1, x2, y2);
         }
         m_drawContext.m_dc.setPenWidth(1);
@@ -231,22 +231,22 @@ class DigitPainterVectorBook extends DigitPainterVectorBase {
         }
     }
     function drawDelimiter(isBlink as Boolean) as Void {
-        var cy as Long = m_y + m_h / 2, cx as Long = m_curPosition + m_markSize / 2;
+        var cy as Numeric = m_y + m_h / 2, cx as Numeric = m_curPosition + m_markSize / 2;
         drawDirectionMarks(cx, cy, m_h / 10, isBlink, UP_NORMAL);
         m_curPosition += (m_markSize + m_digitGap);
     }
 }
 class DigitPainterVectorLandscape extends DigitPainterVectorBase {
     var m_flipLandscape;
-    function drawProgress(percent as Long) as Void {
+    function drawProgress(percent as Numeric) as Void {
         if (m_flipLandscape) {
-            var nonFilledSize as Long = (100 - percent) * (m_h - 2) / 100;
+            var nonFilledSize as Numeric = (100 - percent) * (m_h - 2) / 100;
             m_drawContext.m_dc.fillRectangle(m_x + 1, nonFilledSize + m_y + 1, m_w - 2, m_h - 2 - nonFilledSize);
         } else {
             DigitPainterVectorBase.drawProgress(percent);
         }
     }
-    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) {
+    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric) {
         m_flipLandscape = getApp().m_flipLandscape;
         m_digitGap = w / 17;
         m_penWidth = m_digitGap / 2;
@@ -262,10 +262,10 @@ class DigitPainterVectorLandscape extends DigitPainterVectorBase {
         m_drawContext.m_dc.setPenWidth(m_penWidth);
         if (digit < 0 || digit > 9) { digit = 0; }
         var lines = SegmentDict[digit.toNumber()];
-        for(var i as Long = 0; i < lines.size(); i++) {
+        for(var i as Numeric = 0; i < lines.size(); i++) {
             //each line is [x1, y1, x2, y2] in relative [0..4, 0..6] space
             var line = lines[i];
-            var x1 as Long, y1 as Long, x2 as Long, y2 as Long;
+            var x1 as Numeric, y1 as Numeric, x2 as Numeric, y2 as Numeric;
             if (m_flipLandscape) {
                 x1 = m_w + m_x - m_kx * line[1] - m_digitGap - m_penWidth / 3; x2 = m_w + m_x - m_kx * line[3] - m_digitGap - m_penWidth / 3;
                 y1 = 2 * m_y + m_h - m_curPosition - m_ky * line[0] - 1; y2 = 2 * m_y + m_h - m_curPosition - m_ky * line[2] - 1;
@@ -282,7 +282,7 @@ class DigitPainterVectorLandscape extends DigitPainterVectorBase {
         }
     }
     function drawDelimiter(isBlink as Boolean) as Void {
-        var cx as Long = m_x + m_w / 2, cy as Long, rotation as WhereIsUp;
+        var cx as Numeric = m_x + m_w / 2, cy as Numeric, rotation as WhereIsUp;
         if (m_flipLandscape) {
             cy = 2 * m_y + m_h - m_curPosition - m_markSize / 2;
             rotation = UP_IS_LEFT;
@@ -296,7 +296,7 @@ class DigitPainterVectorLandscape extends DigitPainterVectorBase {
 }
 class DigitPainterFont extends DigitPainterBase {
     var m_font = Graphics.FONT_SYSTEM_NUMBER_THAI_HOT;
-    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) {
+    function initialize(timeObj as TimeObj, drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric) {
         DigitPainterBase.initialize(timeObj, drawContext, x, y, w, h);
         if (w <= HALF_WIDTH) {
             m_markSize = 6;
@@ -335,7 +335,7 @@ class DigitPainterFont extends DigitPainterBase {
                 m_markSize = 8;
             }
         }
-        var need_x as Long = m_digitWidth * m_digits + m_digitGap * (2 + m_digits / 2 + 2 * m_delimiters) + m_delimiters * (m_markSize + 7);
+        var need_x as Numeric = m_digitWidth * m_digits + m_digitGap * (2 + m_digits / 2 + 2 * m_delimiters) + m_delimiters * (m_markSize + 7);
         m_curPosition = x + (w - need_x) / 2 + m_digitGap; //center!
     }
     function drawDigit(digit as Number) as Void {
@@ -361,7 +361,7 @@ class BaseSource {
     var m_timeObj as TimeObj = new TimeObj();
     var m_direction as TimeGrowingDirection = TD_UNKNOWN;
 
-    function initialize(labelId as Long) { m_defLabelId = labelId; }
+    function initialize(defLabelId as Long) { m_defLabelId = defLabelId; }
     function calcLabel(fieldCaption as String) as String {
         if (fieldCaption.length() == 0) {
             fieldCaption = Ui.loadResource(m_defLabelId) + m_defLabelSuffix;
@@ -372,16 +372,16 @@ class BaseSource {
     function onTimerLap() as Void {}
     function preDrawTime(painter as DigitPainterBase, direction as ArrowDirection, isBlink as Boolean) as Void {}
     function postDrawTime(painter as DigitPainterBase, direction as ArrowDirection, isBlink as Boolean) as Void {}
-    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
+    function drawContent(drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric) as Void {
         var txt as String = "not impl";
         drawContext.m_dc.drawText(x + w/2, y + h/2,
             Graphics.FONT_SYSTEM_XTINY, txt, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         drawContext.m_dc.drawRoundedRectangle(x + 1, y + 1, w - 2, h - 2, 5);
     }
-    function onUpdate(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long, label as String) as Void {
+    function onUpdate(drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric, label as String) as Void {
         if (label.length()) {
             drawContext.m_dc.drawText(x + 5, y, Graphics.FONT_SYSTEM_XTINY, label, Graphics.TEXT_JUSTIFY_LEFT);
-            var labelHeight as Long = drawContext.m_dc.getFontHeight(Graphics.FONT_SYSTEM_XTINY);
+            var labelHeight as Numeric = drawContext.m_dc.getFontHeight(Graphics.FONT_SYSTEM_XTINY);
             y += labelHeight;
             h -= labelHeight;
         }
@@ -389,7 +389,7 @@ class BaseSource {
         drawContent(drawContext, x, y, w, h);
         //drawContext.m_dc.clearClip();
     }
-    function drawTime(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long, direction as ArrowDirection) as Void {
+    function drawTime(drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric, direction as ArrowDirection) as Void {
         var p as DigitPainterBase = (h > w) ? 
             new DigitPainterVectorLandscape(m_timeObj, drawContext, x, y, w, h) : 
                 getApp().m_forceVectorFont ? new DigitPainterVectorBook(m_timeObj, drawContext, x, y, w, h) :
@@ -406,23 +406,23 @@ class TimerSource extends BaseSource {
         m_direction = ActInfoToDirection(info);
         if (info.startTime != null) {
             var gi as Gregorian.Info = Gregorian.info(info.startTime, Time.FORMAT_MEDIUM);
-            m_defLabelSuffix = Lang.format(" @$1$:$2$", [ gi.hour, gi.min ]);
+            m_defLabelSuffix = Lang.format(" @$1$:$2$", [ gi.hour.format("%02d"), gi.min.format("%02d") ]);
             return;
         }
         m_defLabelSuffix = "";
     }
-    function initialize(labelId as Long) { BaseSource.initialize(labelId); }
+    function initialize(defLabelId as Long) { BaseSource.initialize(defLabelId); }
     function ActInfoToDirection(info as Activity.Info) as TimeGrowingDirection {
         if (info == null) { return TD_STOPPED; }
-        var ts as Long = info.timerState;
+        var ts as Numeric = info.timerState;
         if (ts == null || ts == Activity.TIMER_STATE_OFF) { return TD_UNKNOWN; }
         if (ts == Activity.TIMER_STATE_STOPPED) { return TD_STOPPED; }
         if (ts == Activity.TIMER_STATE_PAUSED) { return TD_PAUSED; }
         return TD_UP;
     }
-    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
+    function drawContent(drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric) as Void {
         if (m_direction == TD_UNKNOWN) {
-            var font as Long = Graphics.FONT_SYSTEM_LARGE;
+            var font as Numeric = Graphics.FONT_SYSTEM_LARGE;
             var txt as String = null;
             if (h > HALF_HEIGHT) {
                 txt = Ui.loadResource(Rez.Strings.notStartedLarge); //"Timer\n\nis not\n\nstarted\n\nyet"
@@ -443,16 +443,16 @@ class TimerSource extends BaseSource {
 }
 class ClockSource extends BaseSource {
     function initialize() as Void { BaseSource.initialize(Rez.Strings.clockTime); }
-    function FormatUTC(offMinutes as Long) as String {
+    function FormatUTC(offMinutes as Numeric) as String {
         var ret as String;
         ret = " UTC" + (offMinutes > 0 ? "+" : "-");
         if (offMinutes < 0) { offMinutes = -offMinutes; }
-        var minutes as Long = offMinutes % 60;
+        var minutes as Numeric = offMinutes % 60;
         ret += (offMinutes / 60).format("%d");
         if (minutes != 0) { ret += ":" + minutes.format("%d"); }
         return ret;
     }
-    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
+    function drawContent(drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric) as Void {
         var ct as ClockTime = System.getClockTime();
         m_timeObj.m_hours = ct.hour + TEST_ADD_SECONDS / 3600;
         m_timeObj.m_minutes = ct.min;
@@ -470,7 +470,7 @@ class ElapsedSource extends BaseSource {
             m_timeObj.setTotalSeconds(info.elapsedTime / 1000);
             if (m_startTime != null) {
                 var gi as Gregorian.Info = Gregorian.info(m_startTime, Time.FORMAT_MEDIUM);
-                m_defLabelSuffix = Lang.format(" @$1$:$2$", [ gi.hour, gi.min ]);
+                m_defLabelSuffix = Lang.format(" @$1$:$2$", [ gi.hour.format("%02d"), gi.min.format("%02d") ]);
                 return;
             }
         } else {
@@ -479,30 +479,35 @@ class ElapsedSource extends BaseSource {
         m_defLabelSuffix = "";
     }
     function initialize() as Void { BaseSource.initialize(Rez.Strings.elapsedTime); }
-    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
+    function drawContent(drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric) as Void {
         drawTime(drawContext, x, y, w, h, (m_startTime == null) ? TD_PAUSED : TD_UP);
     }
 }
 class TimeLeftSource extends BaseSource {
-    var m_distRemains as Lang.Float = null, m_elapsedDistance as Lang.Float = null; //meters
-    var m_currentSpeed as Lang.Float = null; //meters per second
+    var m_distRemains as Float = null, m_elapsedDistance as Float = null; //meters
+    var m_currentSpeed as Float = null; //meters per second
     var m_oldRemainSeconds as Long = null;
-    var m_progress as Long = 0;
-    function initialize() as Void {
-        BaseSource.initialize(Rez.Strings.timeLeft);
+    var m_progress as Numeric = 0;
+    function initialize(defLabelId as Long) as Void {
+        BaseSource.initialize(defLabelId);
         if (TEST_REMAINS) { m_distRemains = 12000; m_elapsedDistance = 24000; }
     }
     function onCompute(info as Activity.Info) as Void {
+        var destName as String = null;
         if (TEST_REMAINS) {
-            m_currentSpeed = 1200;
+            m_currentSpeed = 120;
             if (m_distRemains > 0) {
                 m_elapsedDistance += m_currentSpeed;
                 m_distRemains -= m_currentSpeed;
             }
         } else {
-            m_distRemains = info.distanceToDestination; //or null
+            m_distRemains = (m_defLabelId == Rez.Strings.timeLeftFin) ? info.distanceToDestination : info.distanceToNextPoint; //or null
+            destName = (m_defLabelId == Rez.Strings.timeLeftFin) ? info.nameOfDestination : info.nameOfNextPoint;
             m_currentSpeed = info.currentSpeed; //or null
             m_elapsedDistance = info.elapsedDistance; //or null
+        }
+        if (destName == null || destName.length() == 0) {
+            destName = Ui.loadResource((m_defLabelId == Rez.Strings.timeLeftFin) ? Rez.Strings.defNameOfDestination : Rez.Strings.defNameOfNextPoint);
         }
 
         m_progress = 0;
@@ -518,14 +523,14 @@ class TimeLeftSource extends BaseSource {
             var newRemainSeconds as Long = m_distRemains / m_currentSpeed;
             if (m_oldRemainSeconds != null && newRemainSeconds >= m_oldRemainSeconds) { m_direction = TD_UP; }
             m_oldRemainSeconds = newRemainSeconds;
-            m_timeObj.setTotalSeconds(newRemainSeconds.toLong());
+            m_timeObj.setTotalSeconds(newRemainSeconds);
             if (m_elapsedDistance + m_distRemains > 1) {
                 m_progress = m_elapsedDistance * 100 / (m_elapsedDistance + m_distRemains);
-                m_defLabelSuffix = (" " + (100 - m_progress) + " %");
+                m_defLabelSuffix = Lang.format("$1$% $2$", [ 100 - m_progress, destName]);
             }
         }
     }
-    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
+    function drawContent(drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric) as Void {
         drawTime(drawContext, x, y, w, h, m_direction);
     }
     function preDrawTime(painter as DigitPainterBase, direction as ArrowDirection, isBlink as Boolean) as Void {
@@ -543,7 +548,7 @@ class TimeLeftSource extends BaseSource {
 }
 // Время круга (Lap Time) - недоступно в 1030, пытаемся догадаться
 class LapTimeSource extends TimerSource {
-    var m_laps as Long = 1;
+    var m_laps as Numeric = 1;
     var m_ticksCounted as Long = 0, m_lastTime as Long = 0;
     var m_lastDirection as TimeGrowingDirection = TD_UNKNOWN;
     function initialize() as Void { TimerSource.initialize(Rez.Strings.lapTime); }
@@ -582,7 +587,7 @@ class LapTimeSource extends TimerSource {
 }
 // Среднее время круга (Avg Lap Time)
 class AvgLapTimeSource extends TimerSource {
-    var m_laps as Long = 1;
+    var m_laps as Numeric = 1;
     var m_lastValue as Long = 0;
     function initialize() as Void { TimerSource.initialize(Rez.Strings.avgLapTime); }
     function onTimerLap() as Void {
@@ -644,7 +649,7 @@ class StepTimeSource extends BaseSource {
         m_timeObj.setTotalSeconds(curTime / 1000);
         m_lastTime = curTime;
     }
-    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
+    function drawContent(drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric) as Void {
         drawTime(drawContext, x, y, w, h, m_direction);
     }*/
     function initialize() as Void { BaseSource.initialize(Rez.Strings.stepTime); }
@@ -655,7 +660,7 @@ class TimeToRecoverySource extends BaseSource {
     /*function onCompute(info as Activity.Info) as Void {
         m_timeObj.setTotalSeconds(info.timeToRecovery / 1000);
     }
-    function drawContent(drawContext as DrawContext, x as Long, y as Long, w as Long, h as Long) as Void {
+    function drawContent(drawContext as DrawContext, x as Numeric, y as Numeric, w as Numeric, h as Numeric) as Void {
         drawTime(drawContext, x, y, w, h, TD_DOWN);
     }*/
 }
@@ -663,8 +668,8 @@ class TimeToRecoverySource extends BaseSource {
 class YaTimeFieldView extends Ui.DataField {
     var m_app as YaTimeFieldApp= Application.getApp();
     var m_fieldSources = new [m_app.m_fieldSources.size()];
-    var m_fieldSourcesCnt as Long = 0;
-    function calcLabel(i as Long) as String {
+    var m_fieldSourcesCnt as Numeric = 0;
+    function calcLabel(i as Numeric) as String {
         var ret as String = "";
         if (m_app.m_fieldCaptionVisible) {
             var src = m_fieldSources[i];
@@ -739,9 +744,9 @@ class YaTimeFieldView extends Ui.DataField {
         }
     }
     function rebuildSources() as Void {
-        var j as Long = 0;
+        var j as Numeric = 0;
         try {
-            for(var i as Long = 0; i < m_app.m_fieldSources.size(); i++) {
+            for(var i as Numeric = 0; i < m_app.m_fieldSources.size(); i++) {
                 var newSrc as BaseSource = sourceFactory(m_app.m_fieldSources[i]);
                 if (newSrc != null) {
                     m_fieldSources[j] = newSrc;
@@ -760,12 +765,13 @@ class YaTimeFieldView extends Ui.DataField {
             m_fieldSources[j] = null;
         }
     }
-    function sourceFactory(i as Long) as BaseSource {
+    function sourceFactory(i as Numeric) as BaseSource {
         switch(i) {
-            case SK_timerTime:       return new TimerSource(Rez.Strings.timerTimeSource);
+            case SK_timerTime:       return new TimerSource(Rez.Strings.timerTime);
             case SK_clockTime:       return new ClockSource();
             case SK_elapsedTime:     return new ElapsedSource();
-            case SK_timeLeft:        return new TimeLeftSource();
+            case SK_timeLeftFin:     return new TimeLeftSource(Rez.Strings.timeLeftFin);
+            case SK_timeLeftNxt:     return new TimeLeftSource(Rez.Strings.timeLeftNxt);
             case SK_lapTime:         return new LapTimeSource();
             case SK_avgLapTime:      return new AvgLapTimeSource();
             case SK_timeBehind:      return new TimeBehindSource();
@@ -784,7 +790,7 @@ class YaTimeFieldView extends Ui.DataField {
         }
     }
     function onTimerLap() as Void {
-        for(var i as Long = 0; i < m_app.m_fieldSources.size(); i++) {
+        for(var i as Numeric = 0; i < m_app.m_fieldSources.size(); i++) {
             var src as BaseSource = m_fieldSources[i];
             if (src == null) { break; }
             try { src.onTimerLap(); } catch(ex) { Sys.println(i.toString() + ".onTimerLap exception: " + ex); }
