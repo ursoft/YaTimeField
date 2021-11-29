@@ -10,6 +10,8 @@
     <string id="elapsedTime">Истёкшее</string>
     <string id="timeLeftFin">ETA.</string>
     <string id="timeLeftNxt">ETA-</string>
+    <string id="timeLeftFinSettings">ETA.Финиш</string>
+    <string id="timeLeftNxtSettings">ETA.Веха</string>
     <string id="notStartedLarge">Таймер\n\nсейчас\n\nещё не\n\nзапущен</string>
     <string id="notStartedMedium">Таймер сейчас\n\nне запущен</string>
     <string id="notStarted">Таймер сейчас\nне запущен</string>

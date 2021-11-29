@@ -36,8 +36,8 @@
                 <listEntry value="0">@Strings.timerTime</listEntry>
                 <listEntry value="1">@Strings.clockTime</listEntry>
                 <listEntry value="2">@Strings.elapsedTime</listEntry>
-                <listEntry value="3">@Strings.timeLeftFin</listEntry>
-                <listEntry value="4">@Strings.timeLeftNxt</listEntry>
+                <listEntry value="3">@Strings.timeLeftFinSettings</listEntry>
+                <listEntry value="4">@Strings.timeLeftNxtSettings</listEntry>
                 <listEntry value="5">@Strings.lapTime</listEntry>
                 <listEntry value="6">@Strings.avgLapTime</listEntry>
                 <listEntry value="7">@Strings.timeBehind</listEntry>
@@ -53,8 +53,8 @@
                 <listEntry value="0">@Strings.timerTime</listEntry>
                 <listEntry value="1">@Strings.clockTime</listEntry>
                 <listEntry value="2">@Strings.elapsedTime</listEntry>
-                <listEntry value="3">@Strings.timeLeftFin</listEntry>
-                <listEntry value="4">@Strings.timeLeftNxt</listEntry>
+                <listEntry value="3">@Strings.timeLeftFinSettings</listEntry>
+                <listEntry value="4">@Strings.timeLeftNxtSettings</listEntry>
                 <listEntry value="5">@Strings.lapTime</listEntry>
                 <listEntry value="6">@Strings.avgLapTime</listEntry>
                 <listEntry value="7">@Strings.timeBehind</listEntry>
@@ -70,8 +70,8 @@
                 <listEntry value="0">@Strings.timerTime</listEntry>
                 <listEntry value="1">@Strings.clockTime</listEntry>
                 <listEntry value="2">@Strings.elapsedTime</listEntry>
-                <listEntry value="3">@Strings.timeLeftFin</listEntry>
-                <listEntry value="4">@Strings.timeLeftNxt</listEntry>
+                <listEntry value="3">@Strings.timeLeftFinSettings</listEntry>
+                <listEntry value="4">@Strings.timeLeftNxtSettings</listEntry>
                 <listEntry value="5">@Strings.lapTime</listEntry>
                 <listEntry value="6">@Strings.avgLapTime</listEntry>
                 <listEntry value="7">@Strings.timeBehind</listEntry>
@@ -87,8 +87,8 @@
                 <listEntry value="0">@Strings.timerTime</listEntry>
                 <listEntry value="1">@Strings.clockTime</listEntry>
                 <listEntry value="2">@Strings.elapsedTime</listEntry>
-                <listEntry value="3">@Strings.timeLeftFin</listEntry>
-                <listEntry value="4">@Strings.timeLeftNxt</listEntry>
+                <listEntry value="3">@Strings.timeLeftFinSettings</listEntry>
+                <listEntry value="4">@Strings.timeLeftNxtSettings</listEntry>
                 <listEntry value="5">@Strings.lapTime</listEntry>
                 <listEntry value="6">@Strings.avgLapTime</listEntry>
                 <listEntry value="7">@Strings.timeBehind</listEntry>

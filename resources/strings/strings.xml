@@ -10,6 +10,8 @@
     <string id="elapsedTime">Elapsed Time</string>
     <string id="timeLeftFin">ETA.</string>
     <string id="timeLeftNxt">ETA-</string>
+    <string id="timeLeftFinSettings">ETA.Final Dest</string>
+    <string id="timeLeftNxtSettings">ETA.Next Point</string>
     <string id="notStartedLarge">Timer\n\nis not\n\nstarted\n\nyet</string>
     <string id="notStartedMedium">Timer is not\n\nstarted yet</string>
     <string id="notStarted">Timer is not\nstarted yet</string>

@@ -118,7 +118,7 @@ class DigitPainterBase {
                     break;
             }
         } else if (m_direction == TD_STOPPED) {
-            m_drawContext.m_dc.drawRectangle(cx - wingSize, cy - wingSize, 2 * (wingSize + 1), 2 * (wingSize + 1));
+            m_drawContext.m_dc.drawRectangle(cx - wingSize - 1, cy - wingSize - 1, 2 * (wingSize + 1), 2 * (wingSize + 1));
         }
         if (isBlink) { m_drawContext.m_dc.setPenWidth(1); }
     }
@@ -339,7 +339,7 @@ class DigitPainterFont extends DigitPainterBase {
     }
     function drawDigit(digit as Number) as Void {
         if (digit < 0 || digit > 9) { digit = 0; }
-        m_drawContext.m_dc.drawText(m_curPosition + m_digitWidth / 2, m_y + m_h / 2 + m_digitWidth / 7, m_font, digit.format("%d"), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        m_drawContext.m_dc.drawText(m_curPosition + m_digitWidth / 2, m_y + m_h / 2 + m_digitWidth / 7 + 3, m_font, digit.format("%d"), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         m_curPosition += (m_digitWidth + m_digitGap);
         if (m_bPrintSeconds == false) {
             m_curPosition--; // got some place for NotifySecondsHidden mark
@@ -349,7 +349,7 @@ class DigitPainterFont extends DigitPainterBase {
         }
     }
     function NotifySecondsHidden() as Void {
-        m_drawContext.m_dc.drawRectangle(m_curPosition, m_y + m_h / 2 - m_digitWidth / 7, 3, 3);
+        m_drawContext.m_dc.drawRectangle(m_curPosition, m_y + m_h / 2 - m_digitWidth / 7 + 3, 3, 3);
     }
     function drawDelimiter(isBlink as Boolean) as Void {
         var cx = m_curPosition + m_markSize / 2 + 3, cy = m_y + m_h / 2;
