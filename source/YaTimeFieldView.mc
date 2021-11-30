@@ -8,7 +8,7 @@ using Toybox.System as Sys;
 
 //для тестирования (в релизе поставить всё по 0)
 const TEST_ADD_SECONDS as Number = 0;   // увеличить отображаемое время, чтобы отработал алгоритм показа часов, например
-const TEST_REMAINS as Boolean = true;  // тест прогноза времени финиша
+const TEST_REMAINS as Boolean = false;  // тест прогноза времени финиша
 const TEST_RECTS as Boolean = false;    // тест вычислений координат
 
 enum SourceKind { SK_timerTime, SK_clockTime, SK_elapsedTime, SK_timeLeftFin, SK_timeLeftNxt, SK_lapTime, SK_avgLapTime, SK_timeBehind, SK_workoutDuration,
