@@ -7,7 +7,7 @@ import Toybox.Application.Properties;
 class YaTimeFieldApp extends Application.AppBase {
     function initialize() {
         AppBase.initialize();
-        storeSetting("appVersion", "01.12.2021 #15"); //change it here (the only place)
+        storeSetting("appVersion", "01.12.2021 #16"); //change it here (the only place)
         readAllSettings();
     }
     function storeSetting(name as String, value as Numeric or Boolean or String) as Void {

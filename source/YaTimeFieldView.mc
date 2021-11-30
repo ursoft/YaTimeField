@@ -373,6 +373,7 @@ class BaseSource {
     }
     function onCompute(info as Activity.Info) as Void {}
     function onTimerLap() as Void {}
+    function onTimerReset() as Void {}
     function preDrawTime(painter as DigitPainterBase, isBlink as Boolean) as Void {}
     function postDrawTime(painter as DigitPainterBase, isBlink as Boolean) as Void {}
     function drawContent(drawContext as DrawContext, x as Number, y as Number, w as Number, h as Number) as Void {
@@ -404,9 +405,31 @@ class BaseSource {
     }
 }
 class TimerSource extends BaseSource {
-    function onCompute(info as Activity.Info) as Void {
-        m_timeObj.setTotalSeconds((info.timerTime as Number) / 1000);
-        m_flow = actInfoToTimeGrowing(info);
+    var m_lastTimeVal as Number = 0;
+    function actInfoToTimeFlow(timeVal as Number, info as Activity.Info) as TimeFlow {
+        if (info == null) { return TF_UNKNOWN; }
+        var ts = info.timerState;
+        if (ts == null || ts == Activity.TIMER_STATE_OFF) { return TF_UNKNOWN; }
+        
+        var ret = TF_PAUSED;
+        if(timeVal > m_lastTimeVal) {
+            ret = TF_INCREASES;
+        } else if(timeVal < m_lastTimeVal) {
+            ret = TF_DECREASES;
+        }
+        m_lastTimeVal = timeVal;
+        m_timeObj.setTotalSeconds(timeVal / 1000);
+        if (ts == Activity.TIMER_STATE_STOPPED) { return TF_STOPPED; }
+        return ret;
+    }
+    function onTimerReset() as Void {
+        m_lastTimeVal = 0;
+        m_timeObj.setTotalSeconds(0);
+        m_defLabelSuffix = "";
+        m_flow = TF_UNKNOWN;
+    }
+    function computeBy(timeVal as Number, info as Activity.Info) as Void {
+        m_flow = actInfoToTimeFlow(timeVal, info);
         if (info.startTime != null) {
             var gi = Gregorian.info(info.startTime as Time.Moment, Time.FORMAT_MEDIUM);
             m_defLabelSuffix = Lang.format(" @$1$:$2$", [ gi.hour.format("%02d"), gi.min.format("%02d") ]);
@@ -414,15 +437,10 @@ class TimerSource extends BaseSource {
         }
         m_defLabelSuffix = "";
     }
-    function initialize(defLabelId as Symbol) { BaseSource.initialize(defLabelId); }
-    function actInfoToTimeGrowing(info as Activity.Info) as TimeFlow {
-        if (info == null) { return TF_STOPPED; }
-        var ts = info.timerState;
-        if (ts == null || ts == Activity.TIMER_STATE_OFF) { return TF_UNKNOWN; }
-        if (ts == Activity.TIMER_STATE_STOPPED) { return TF_STOPPED; }
-        if (ts == Activity.TIMER_STATE_PAUSED) { return TF_PAUSED; }
-        return TF_INCREASES;
+    function onCompute(info as Activity.Info) as Void {
+        computeBy(info.timerTime as Number, info);
     }
+    function initialize(defLabelId as Symbol) { BaseSource.initialize(defLabelId); }
     function drawContent(drawContext as DrawContext, x as Number, y as Number, w as Number, h as Number) as Void {
         if (m_flow == TF_UNKNOWN) {
             var font = Graphics.FONT_SYSTEM_LARGE;
@@ -465,27 +483,11 @@ class ClockSource extends BaseSource {
         drawTime(drawContext, x, y, w, h);
     }
 }
-class ElapsedSource extends BaseSource {
-    var m_startTime as Time.Moment?;
+class ElapsedSource extends TimerSource {
     function onCompute(info as Activity.Info) as Void {
-        m_startTime = info.startTime;
-        if (info.elapsedTime != null) {
-            m_timeObj.setTotalSeconds((info.elapsedTime as Number) / 1000);
-            if (m_startTime != null) {
-                var gi = Gregorian.info(m_startTime, Time.FORMAT_MEDIUM);
-                m_defLabelSuffix = Lang.format(" @$1$:$2$", [ gi.hour.format("%02d"), gi.min.format("%02d") ]);
-                return;
-            }
-        } else {
-            m_timeObj.setTotalSeconds(0);
-        }
-        m_defLabelSuffix = "";
-        m_flow = (m_startTime == null) ? TF_PAUSED : TF_INCREASES;
+        computeBy(info.elapsedTime as Number, info);
     }
-    function initialize() { BaseSource.initialize(Rez.Strings.elapsedTime); }
-    function drawContent(drawContext as DrawContext, x as Number, y as Number, w as Number, h as Number) as Void {
-        drawTime(drawContext, x, y, w, h);
-    }
+    function initialize() { TimerSource.initialize(Rez.Strings.elapsedTime); }
 }
 class TimeLeftSource extends BaseSource {
     var m_distRemains as Float = 0.0, m_elapsedDistance as Float = 0.0; //meters
@@ -550,69 +552,43 @@ class TimeLeftSource extends BaseSource {
         BaseSource.preDrawTime(painter, isBlink);
     }
 }
-// Время круга (Lap Time) - недоступно в 1030, пытаемся догадаться
-class LapTimeSource extends TimerSource {
-    var m_laps as Number = 1;
-    var m_ticksCounted as Number = 0, m_lastTime as Number = 0;
-    var m_lastFlow as TimeFlow = TF_UNKNOWN;
-    function initialize() { TimerSource.initialize(Rez.Strings.lapTime); }
-    function onTimerLap() as Void {
-        m_ticksCounted = 0;
-        m_lastTime = System.getTimer();
-        m_laps++;
-        m_defLabelSuffix = " #" + m_laps.toString();
-    }
-    function onCompute(info as Activity.Info) as Void {
-        m_flow = actInfoToTimeGrowing(info);
-        var nowTicks = System.getTimer();
-        switch (m_flow) {
-            case TF_UNKNOWN: 
-                m_ticksCounted = 0;
-                m_laps = 1;
-                m_defLabelSuffix = "";
-                break;
-            case TF_INCREASES:
-                if (m_flow == m_lastFlow) {
-                    if (nowTicks - m_lastTime > 1500) { //бывают ли такие задержки?
-                        m_ticksCounted += 500;
-                    } else {
-                        m_ticksCounted += (nowTicks - m_lastTime);
-                    }
-                    m_lastTime = nowTicks;
-                } else { //500ms - OK?
-                    m_ticksCounted += 500;
-                }
-                break;
-        }
-        m_lastTime = nowTicks;
-        m_lastFlow = m_flow;
-        m_timeObj.setTotalSeconds(m_ticksCounted / 1000);
-    }
-}
 // Среднее время круга (Avg Lap Time)
 class AvgLapTimeSource extends TimerSource {
     var m_laps as Number = 1;
-    var m_lastValue as Number = 0;
-    function initialize() { TimerSource.initialize(Rez.Strings.avgLapTime); }
+    function initialize(defLabelId as Symbol) { TimerSource.initialize(defLabelId); }
+    function onTimerReset() as Void {
+        m_laps = 1;
+        TimerSource.onTimerReset();
+    }
     function onTimerLap() as Void {
         m_laps++;
         m_defLabelSuffix = " @" + m_laps.toString();
     }
     function onCompute(info as Activity.Info) as Void {
-        m_flow = actInfoToTimeGrowing(info);
-        switch (m_flow) {
-            case TF_UNKNOWN: 
-                m_laps = 1;
-                m_defLabelSuffix = "";
-                m_timeObj.setTotalSeconds(0);
-                break;
-            case TF_INCREASES:
-                var newValue = (info.timerTime as Number) / m_laps / 1000;
-                if (m_lastValue > newValue) { m_flow = TF_DECREASES; }
-                m_timeObj.setTotalSeconds(newValue);
-                m_lastValue = newValue;
-                break;
+        m_flow = actInfoToTimeFlow(((info.timerTime as Number) / m_laps).toNumber(), info);
+    }
+}
+// Время круга (Lap Time) - недоступно в 1030, пытаемся догадаться
+class LapTimeSource extends AvgLapTimeSource {
+    var m_reperTime as Number = 0;
+    function initialize() { AvgLapTimeSource.initialize(Rez.Strings.lapTime); }
+    function onTimerReset() as Void {
+        m_reperTime = 0;
+        AvgLapTimeSource.onTimerReset();
+    }
+    function onTimerLap() as Void {
+        m_lastTimeVal = 0;
+        var info = Activity.getActivityInfo();
+        if (info != null) {
+            m_reperTime = (info as Activity.Info).timerTime as Number;
+        } else {
+            m_reperTime = 0;
         }
+        m_timeObj.setTotalSeconds(0);
+        AvgLapTimeSource.onTimerLap();
+    }
+    function onCompute(info as Activity.Info) as Void {
+        m_flow = actInfoToTimeFlow(info.timerTime != null ? (info.timerTime as Number) - m_reperTime : 0, info);
     }
 }
 // Время отставания (кр/зел?) от вирт. партнера (Time Behind) - не реализовано в IQ
@@ -785,7 +761,7 @@ class YaTimeFieldView extends Ui.DataField {
             case SK_timeLeftFin:     return new TimeLeftSource(Rez.Strings.timeLeftFin);
             case SK_timeLeftNxt:     return new TimeLeftSource(Rez.Strings.timeLeftNxt);
             case SK_lapTime:         return new LapTimeSource();
-            case SK_avgLapTime:      return new AvgLapTimeSource();
+            case SK_avgLapTime:      return new AvgLapTimeSource(Rez.Strings.avgLapTime);
             case SK_timeBehind:      return new TimeBehindSource();
             case SK_workoutDuration: return new WorkoutDurationSource();
             case SK_timeToGo:        return new TimeToGoSource();
@@ -809,6 +785,15 @@ class YaTimeFieldView extends Ui.DataField {
             if (src == null) { break; }
             try { getFieldSource(i).onTimerLap(); } catch(ex) {
                 Sys.println(Lang.format("$1$.onTimerLap exception: $2$", [i, ex.getErrorMessage()])); 
+            }
+        }
+    }
+    function onTimerReset() as Void {
+        for(var i = 0; i < m_app.m_fieldSources.size(); i++) {
+            var src = m_fieldSources[i];
+            if (src == null) { break; }
+            try { getFieldSource(i).onTimerReset(); } catch(ex) {
+                Sys.println(Lang.format("$1$.onTimerReset exception: $2$", [i, ex.getErrorMessage()])); 
             }
         }
     }
