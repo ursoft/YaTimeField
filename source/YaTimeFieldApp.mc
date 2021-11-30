@@ -18,7 +18,7 @@ class YaTimeFieldApp extends Application.AppBase {
                 AppBase.setProperty(name, value);
             }
         } catch(ex) {
-            Sys.println("storeSetting exception: " + ex); 
+            Sys.println(Lang.format("storeSetting($1$, $2$) exception: $3$", [name, value, ex.getErrorMessage()])); 
         }
     }
     function readSetting(name as String, defValue as Numeric or Boolead or String) as Numeric or Boolead or String or Null {
@@ -30,8 +30,8 @@ class YaTimeFieldApp extends Application.AppBase {
                 return AppBase.getProperty(name);
             }
         } catch(ex) {
-            Sys.println("readSetting exception: " + ex); 
             storeSetting(name, defValue);
+            Sys.println(Lang.format("readSetting($1$) exception: $2$", [name, ex.getErrorMessage()])); 
             return defValue;
         }
     }
@@ -44,7 +44,7 @@ class YaTimeFieldApp extends Application.AppBase {
     // Return the initial view of your application here
     function getInitialView() as Array<Views or InputDelegates>? {
         m_view = new YaTimeFieldView();
-        return [ m_view ] as Array<Views or InputDelegates>;
+        return [ m_view/*, new MyInputDelegate()*/ ] as Array<Views or InputDelegates>;
     }
 
     var m_fieldCaptionVisible as Boolean = true;
@@ -52,7 +52,7 @@ class YaTimeFieldApp extends Application.AppBase {
     var m_forceVectorFont as Boolean = false;
     var m_antiAliasing as Boolean = true;
     var m_fieldCaption as String = "";
-    var m_fieldSources = [0, -1, -1, -1]; //=SK_CNT
+    var m_fieldSources as Number = [0, -1, -1, -1]; //=SK_CNT
     function readAllSettings() {
         m_fieldCaptionVisible = true;
         m_flipLandscape = false;
@@ -74,7 +74,7 @@ class YaTimeFieldApp extends Application.AppBase {
             m_fieldSources[2] = readSetting("fieldSource3", m_fieldSources[2]);
             m_fieldSources[3] = readSetting("fieldSource4", m_fieldSources[3]);
         } catch(ex) {
-            Sys.println("readAllSettings exception: " + ex); 
+            Sys.println(Lang.format("readAllSettings exception: $1$", [ex.getErrorMessage()])); 
         }
     }
     function onSettingsChanged() {

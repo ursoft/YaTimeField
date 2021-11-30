@@ -669,7 +669,7 @@ class TimeToRecoverySource extends BaseSource {
 
 class YaTimeFieldView extends Ui.DataField {
     var m_app as YaTimeFieldApp= Application.getApp();
-    var m_fieldSources = new [m_app.m_fieldSources.size()];
+    var m_fieldSources as BaseSource = new [m_app.m_fieldSources.size()];
     var m_fieldSourcesCnt as Numeric = 0;
     function calcLabel(i as Numeric) as String {
         var ret as String = "";
@@ -689,10 +689,10 @@ class YaTimeFieldView extends Ui.DataField {
         rebuildSources();
     }
     function onUpdate(dc as Graphics.Dc) as Void {
-        try { 
+        try {
             onUpdateWorker(dc); 
         } catch(ex) { 
-            Sys.println("onUpdate exception: " + ex); // почему-то при отладке в IDE не показывает ничего интересного. Оставляем для production, чтобы одно поле не валило всех
+            Sys.println(Lang.format("onUpdate exception: $1$", [ex.getErrorMessage()])); 
         }
     }
     function onUpdateWorker(dc as Graphics.Dc) {
@@ -764,7 +764,7 @@ class YaTimeFieldView extends Ui.DataField {
                 j++;
             }
         } catch(ex) {
-            Sys.println(j.toString() + ".rebuildSources exception: " + ex);  // почему-то при отладке в IDE не показывает ничего интересного. Оставляем для production, чтобы одно поле не валило всех
+            Sys.println(Lang.format("$1$.rebuildSources exception: $2$", [j, ex.getErrorMessage()])); 
         }
         m_fieldSourcesCnt = j;
         for(; j < m_app.m_fieldSources.size(); j++ ) {
@@ -789,11 +789,11 @@ class YaTimeFieldView extends Ui.DataField {
         }
     }
     function compute(info as Activity.Info) as Void {
-        for(var i = 0; i < m_app.m_fieldSources.size(); i++) {
-            var src = m_fieldSources[i];
+        for(var i as Numeric = 0; i < m_app.m_fieldSources.size(); i++) {
+            var src as BaseSource = m_fieldSources[i];
             if (src == null) { break; }
             try { src.onCompute(info); } catch(ex) {
-                Sys.println(i.toString() + ".compute exception: " + ex); // почему-то при отладке в IDE не показывает ничего интересного. Оставляем для production, чтобы одно поле не валило всех
+                Sys.println(Lang.format("$1$.compute exception: $2$", [i, ex.getErrorMessage()])); 
             }
         }
     }
@@ -802,8 +802,19 @@ class YaTimeFieldView extends Ui.DataField {
             var src as BaseSource = m_fieldSources[i];
             if (src == null) { break; }
             try { src.onTimerLap(); } catch(ex) {
-                Sys.println(i.toString() + ".onTimerLap exception: " + ex); // почему-то при отладке в IDE не показывает ничего интересного. Оставляем для production, чтобы одно поле не валило всех
+                Sys.println(Lang.format("$1$.onTimerLap exception: $2$", [i, ex.getErrorMessage()])); 
             }
         }
+    }
+}
+
+class MyInputDelegate extends Ui.InputDelegate {
+    function initialize() {
+        InputDelegate.initialize();
+    }
+
+    function onTap(clickEvent) {
+        //Sys.println(clickEvent.getType());      // e.g. CLICK_TYPE_TAP = 0
+        return true;
     }
 }
