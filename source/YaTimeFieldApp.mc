@@ -4,10 +4,12 @@ using Toybox.System as Sys;
 using Toybox.WatchUi as Ui;
 import Toybox.Application.Properties;
 
+const APP_VERSION as String = "01.12.21 #18"; //change it here (the only place)
+
 class YaTimeFieldApp extends Application.AppBase {
     function initialize() {
         AppBase.initialize();
-        storeSetting("appVersion", "01.12.2021 #16"); //change it here (the only place)
+        storeSetting("appVersion", APP_VERSION);
         readAllSettings();
     }
     function storeSetting(name as String, value as Numeric or Boolean or String) as Void {
@@ -18,7 +20,7 @@ class YaTimeFieldApp extends Application.AppBase {
                 AppBase.setProperty(name, value);
             }
         } catch(ex) {
-            Sys.println(Lang.format("storeSetting($1$, $2$) exception: $3$", [name, value, ex.getErrorMessage()])); 
+            Sys.println(Lang.format("storeSetting($1$, $2$) exception: $3$", [name, value, ex.getErrorMessage()]));
         }
     }
     function readSetting(name as String, defValue as Numeric or Boolean or String) as Numeric or Boolean or String or Null {
@@ -85,8 +87,122 @@ class YaTimeFieldApp extends Application.AppBase {
         }
         Ui.requestUpdate();
     }
+    function getSettingsView() as Array<Ui.Views or Ui.InputDelegates>? {
+        return [new MySettingsMenu(), new MySettingsMenuDelegate()] as Array<Ui.Views or Ui.InputDelegates>;
+    }
 }
-
+function FieldSourceToString(fs as Number) as String {
+    switch (fs) {
+        case -1: return Ui.loadResource(Rez.Strings.noFieldSource) as String;
+        case 0:  return Ui.loadResource(Rez.Strings.timerTime) as String;
+        case 1:  return Ui.loadResource(Rez.Strings.clockTime) as String;
+        case 2:  return Ui.loadResource(Rez.Strings.elapsedTime) as String;
+        case 3:  return Ui.loadResource(Rez.Strings.timeLeftFinSettings) as String;
+        case 4:  return Ui.loadResource(Rez.Strings.timeLeftNxtSettings) as String;
+        case 5:  return Ui.loadResource(Rez.Strings.lapTime) as String;
+        case 6:  return Ui.loadResource(Rez.Strings.avgLapTime) as String;
+    }
+}
+class MySettingsMenu extends Ui.Menu2 {
+    function initialize() {
+        Menu2.initialize(null);
+        Menu2.setTitle((Ui.loadResource(Rez.Strings.AppName) as String) + " v" + APP_VERSION);
+        var app = $.getApp();
+        Menu2.addItem(new Ui.ToggleMenuItem("fieldCaptionVisible", Ui.loadResource(Rez.Strings.fieldCaptionVisibleTitle) as String, "fieldCaptionVisible", app.m_fieldCaptionVisible, null));
+        Menu2.addItem(new Ui.MenuItem(app.m_fieldCaption, Ui.loadResource(Rez.Strings.fieldCaptionTitle) as String, "fieldCaption", null));
+        Menu2.addItem(new Ui.ToggleMenuItem("flipLandscape", Ui.loadResource(Rez.Strings.flipLandscapeTitle) as String, "flipLandscape", app.m_flipLandscape, null));
+        Menu2.addItem(new Ui.ToggleMenuItem("forceVectorFont", Ui.loadResource(Rez.Strings.forceVectorFontTitle) as String, "forceVectorFont", app.m_forceVectorFont, null));
+        Menu2.addItem(new Ui.ToggleMenuItem("antiAliasing", Ui.loadResource(Rez.Strings.antiAliasingTitle) as String, "antiAliasing", app.m_antiAliasing, null));        
+        Menu2.addItem(new Ui.MenuItem(Ui.loadResource(Rez.Strings.fieldSourceTitle) as String, FieldSourceToString(app.m_fieldSources[0]), "0", null));
+        Menu2.addItem(new Ui.MenuItem(Ui.loadResource(Rez.Strings.fieldSourceTitle) as String, FieldSourceToString(app.m_fieldSources[1]), "1", null));
+        Menu2.addItem(new Ui.MenuItem(Ui.loadResource(Rez.Strings.fieldSourceTitle) as String, FieldSourceToString(app.m_fieldSources[2]), "2", null));
+        Menu2.addItem(new Ui.MenuItem(Ui.loadResource(Rez.Strings.fieldSourceTitle) as String, FieldSourceToString(app.m_fieldSources[3]), "3", null));
+    }    
+}
+class MyTextPickerDelegate extends Ui.TextPickerDelegate {
+    var m_sender as Ui.MenuItem;
+    function initialize(sender as Ui.MenuItem) {
+        TextPickerDelegate.initialize();
+        m_sender = sender;
+    }
+    function onTextEntered(text as String, changed as Boolean) as Boolean {
+        //Sys.println(Lang.format("onTextEntered($1$, $2$)", [text, changed])); 
+        if (changed) {
+            $.getApp().m_fieldCaption = text;
+            m_sender.setLabel(text);
+        }
+        return true;
+    }
+}
+class MySourceSettingsMenu extends Ui.Menu2 {
+    function initialize(idx as Number) {
+        Menu2.initialize(null);
+        Menu2.setTitle((Ui.loadResource(Rez.Strings.fieldSourceTitle) as String) + " #" + (idx + 1).toString());
+        var app = $.getApp();
+        for (var i = -1; i <= 6; i++) {
+            Menu2.addItem(new Ui.ToggleMenuItem(FieldSourceToString(i), null, i, app.m_fieldSources[idx] == i, null));
+        }
+    }    
+}
+class MySourceSettingsMenuDelegate extends Ui.Menu2InputDelegate {
+    var m_idx as Number;
+    var m_item as Ui.MenuItem;
+    function initialize(idx as Number, item as Ui.MenuItem) {
+        Menu2InputDelegate.initialize();
+        m_idx = idx;
+        m_item = item;
+    }
+    function onSelect(item as Ui.MenuItem) as Void {
+        var id = (item.getId() as String).toNumber() as Number;
+        var app = $.getApp();
+        if (app.m_fieldSources[m_idx] != id) {
+            app.m_fieldSources[m_idx] = id;
+            m_item.setSubLabel(FieldSourceToString(id));
+            app.storeSetting(Lang.format("fieldSource$1$", [m_idx + 1]), app.m_fieldSources[m_idx]);
+            app.onSettingsChanged();
+        }
+        Ui.popView(Ui.SLIDE_IMMEDIATE);
+    }
+    function onBack() as Void {
+        Ui.popView(Ui.SLIDE_IMMEDIATE);
+    }
+}
+class MySettingsMenuDelegate extends Ui.Menu2InputDelegate {
+    function initialize() {
+        Menu2InputDelegate.initialize();
+    }
+    function onSelect(item as Ui.MenuItem) as Void {
+        var id = item.getId() as String;
+        var app = $.getApp();
+        switch (id) {
+            case "fieldCaptionVisible":
+                app.m_fieldCaptionVisible = !app.m_fieldCaptionVisible;
+                app.storeSetting(id, app.m_fieldCaptionVisible);
+                break;
+            case "flipLandscape":
+                app.m_flipLandscape = !app.m_flipLandscape;
+                app.storeSetting(id, app.m_flipLandscape);
+                break;
+            case "forceVectorFont":
+                app.m_forceVectorFont = !app.m_forceVectorFont;
+                app.storeSetting(id, app.m_forceVectorFont);
+                break;
+            case "antiAliasing":
+                app.m_antiAliasing = !app.m_antiAliasing;
+                app.storeSetting(id, app.m_antiAliasing);
+                break;
+            case "fieldCaption":
+                Ui.pushView(new Ui.TextPicker(app.m_fieldCaption), new MyTextPickerDelegate(item), Ui.SLIDE_DOWN);
+                break;
+            default:
+                Ui.pushView(new MySourceSettingsMenu(id.toNumber() as Number), new MySourceSettingsMenuDelegate(id.toNumber() as Number, item), Ui.SLIDE_DOWN);
+                break;
+        }
+    }
+    function onBack() as Void {
+        Ui.popView(Ui.SLIDE_IMMEDIATE);
+    }
+}
 function getApp() as YaTimeFieldApp {
     return Application.getApp() as YaTimeFieldApp;
 }

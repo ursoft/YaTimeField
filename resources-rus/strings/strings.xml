@@ -1,8 +1,8 @@
 <strings>
     <string id="AppName">YaTimeField</string>
     <string id="appVersionTitle">Версия приложения: </string>
-    <string id="fieldCaptionTitle">Заголовок поля или пустая строка: </string>
-    <string id="fieldCaptionVisibleTitle">Показать заголовок поля: </string>
+    <string id="fieldCaptionTitle">Заголовок поля: </string>
+    <string id="fieldCaptionVisibleTitle">Виден заголовок поля: </string>
     <string id="noFieldSource">(нет)</string>
     <string id="fieldSourceTitle">Источник поля: </string>
     <string id="timerTime">Таймер</string>
@@ -16,7 +16,7 @@
     <string id="notStartedMedium">Таймер сейчас\n\nне запущен</string>
     <string id="notStarted">Таймер сейчас\nне запущен</string>
     <string id="flipLandscapeTitle">Перевернуть ландшафт: </string>
-    <string id="forceVectorFontTitle">Всегда векторный шрифт: </string>
+    <string id="forceVectorFontTitle">Векторный шрифт: </string>
     <string id="lapTime">Время круга</string>
     <string id="avgLapTime">Ср. время круга</string>
     <string id="timeBehind">-Время отставания</string>
@@ -24,7 +24,7 @@
     <string id="timeToGo">-Ост. время трен.</string>
     <string id="stepTime">-Время этапа трен.</string>
     <string id="timeToRecovery">-Восстановление</string>
-    <string id="antiAliasingTitle">Сглаживание: </string>
+    <string id="antiAliasingTitle">Сглаживание линий: </string>
     <string id="defNameOfDestination">Финишево</string>
     <string id="defNameOfNextPoint">Промежутово</string>
 </strings>

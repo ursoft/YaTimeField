@@ -364,6 +364,10 @@ class BaseSource {
     var m_timeObj as TimeObj = new TimeObj();
     var m_flow as TimeFlow = TF_UNKNOWN;
 
+    static function SafeNumber(num as Number?) as Number { return (num == null) ? 0 : (num as Number); }
+    static function SafeFloat(num as Float?) as Float { return (num == null) ? 0.0 : (num as Float); }
+    static function SafeString(str as String?) as String { return (str == null) ? "" : (str as String); }
+
     function initialize(defLabelId as Symbol) { m_defLabelId = defLabelId; }
     function calcLabel(fieldCaption as String) as String {
         if (fieldCaption.length() == 0) {
@@ -408,7 +412,7 @@ class TimerSource extends BaseSource {
     var m_lastTimeVal as Number = 0;
     function actInfoToTimeFlow(timeVal as Number, info as Activity.Info) as TimeFlow {
         if (info == null) { return TF_UNKNOWN; }
-        var ts = info.timerState;
+        var ts = SafeNumber(info.timerState);
         if (ts == null || ts == Activity.TIMER_STATE_OFF) { return TF_UNKNOWN; }
         
         var ret = TF_PAUSED;
@@ -438,7 +442,7 @@ class TimerSource extends BaseSource {
         m_defLabelSuffix = "";
     }
     function onCompute(info as Activity.Info) as Void {
-        computeBy(info.timerTime as Number, info);
+        computeBy(SafeNumber(info.timerTime), info);
     }
     function initialize(defLabelId as Symbol) { BaseSource.initialize(defLabelId); }
     function drawContent(drawContext as DrawContext, x as Number, y as Number, w as Number, h as Number) as Void {
@@ -485,7 +489,7 @@ class ClockSource extends BaseSource {
 }
 class ElapsedSource extends TimerSource {
     function onCompute(info as Activity.Info) as Void {
-        computeBy(info.elapsedTime as Number, info);
+        computeBy(SafeNumber(info.elapsedTime), info);
     }
     function initialize() { TimerSource.initialize(Rez.Strings.elapsedTime); }
 }
@@ -500,19 +504,19 @@ class TimeLeftSource extends BaseSource {
     }
     function onCompute(info as Activity.Info) as Void {
         var destName = "";
-        if (TEST_REMAINS) {
+        if ($.TEST_REMAINS) {
             m_currentSpeed = 120.0;
             if (m_distRemains > 0.0) {
                 m_elapsedDistance += m_currentSpeed;
                 m_distRemains -= m_currentSpeed;
             }
         } else {
-            m_distRemains = ((m_defLabelId == Rez.Strings.timeLeftFin) ? info.distanceToDestination : info.distanceToNextPoint) as Float;
-            destName = ((m_defLabelId == Rez.Strings.timeLeftFin) ? info.nameOfDestination : info.nameOfNextPoint) as String;
-            m_currentSpeed = info.currentSpeed as Float;
-            m_elapsedDistance = info.elapsedDistance as Float;
+            m_distRemains = SafeFloat((m_defLabelId == Rez.Strings.timeLeftFin) ? info.distanceToDestination : info.distanceToNextPoint);
+            destName = SafeString((m_defLabelId == Rez.Strings.timeLeftFin) ? info.nameOfDestination : info.nameOfNextPoint);
+            m_currentSpeed = SafeFloat(info.currentSpeed);
+            m_elapsedDistance = SafeFloat(info.elapsedDistance);
         }
-        if (destName.length() == 0) {
+        if (destName == null || destName.length() == 0) {
             destName = Ui.loadResource((m_defLabelId == Rez.Strings.timeLeftFin) ? Rez.Strings.defNameOfDestination : Rez.Strings.defNameOfNextPoint) as String;
         }
 
@@ -565,7 +569,7 @@ class AvgLapTimeSource extends TimerSource {
         m_defLabelSuffix = " @" + m_laps.toString();
     }
     function onCompute(info as Activity.Info) as Void {
-        m_flow = actInfoToTimeFlow(((info.timerTime as Number) / m_laps).toNumber(), info);
+        m_flow = actInfoToTimeFlow(info.timerTime != null ? ((info.timerTime as Number) / m_laps).toNumber() : 0, info);
     }
 }
 // Время круга (Lap Time) - недоступно в 1030, пытаемся догадаться
@@ -580,7 +584,7 @@ class LapTimeSource extends AvgLapTimeSource {
         m_lastTimeVal = 0;
         var info = Activity.getActivityInfo();
         if (info != null) {
-            m_reperTime = (info as Activity.Info).timerTime as Number;
+            m_reperTime = SafeNumber((info as Activity.Info).timerTime);
         } else {
             m_reperTime = 0;
         }
@@ -637,13 +641,7 @@ class StepTimeSource extends BaseSource {
 // Время восстановления Time To Recovery - need Api3.3.0, but for now 1030+ have 3.2.8
 class TimeToRecoverySource extends BaseSource {
     function initialize() { BaseSource.initialize(Rez.Strings.timeToRecovery); }
-    /*function onCompute(info as Activity.Info) as Void {
-        m_timeObj.setTotalSeconds(info.timeToRecovery / 1000);
-    }
-    function drawContent(drawContext as DrawContext, x as Number, y as Number, w as Number, h as Number) as Void {
-        m_flow = TF_DECREASES;
-        drawTime(drawContext, x, y, w, h);
-    }*/
+    /*info.timeToRecovery*/
 }
 
 class YaTimeFieldView extends Ui.DataField {
@@ -657,7 +655,7 @@ class YaTimeFieldView extends Ui.DataField {
             if (src != null) {
                 ret = src.calcLabel(m_app.m_fieldCaption);
                 if (ret.length() == 0) {
-                    ret = "YaTimeField" + i.toString();
+                    ret = "YaTimeField #" + i.toString();
                 }
             }
         }

@@ -1,8 +1,8 @@
 <strings>
     <string id="AppName">YaTimeField</string>
     <string id="appVersionTitle">App Version: </string>
-    <string id="fieldCaptionTitle">YaTimeField Caption or empty string: </string>
-    <string id="fieldCaptionVisibleTitle">Show YaTimeField Caption: </string>
+    <string id="fieldCaptionTitle">YaTimeField Caption or empty: </string>
+    <string id="fieldCaptionVisibleTitle">Caption visibility: </string>
     <string id="fieldSourceTitle">Field Source: </string>
     <string id="noFieldSource">(none)</string>
     <string id="timerTime">Timer</string>
