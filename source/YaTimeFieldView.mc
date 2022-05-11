@@ -169,7 +169,7 @@ class DigitPainterBase {
 typedef NA as Array<Number>;
 class DigitPainterVectorBase extends DigitPainterBase {
     //4x6 matrix
-    const SegmentDict as Dictionary<Number, Array<NA> > = {
+    static const SegmentDict as Dictionary<Number, Array<NA> > = {
         0 => [[1,0, 3,0] as NA, [3,0, 4,1] as NA, [4,1, 4,5] as NA, [4,5, 3,6] as NA, [3,6, 1,6] as NA, [1,6, 0,5] as NA, [0,5, 0,1] as NA, [0,1, 1,0] as NA] as Array<NA>,
         1 => [[1,0, 3,0] as NA, [2,0, 2,6] as NA, [2,6, 1,5] as NA] as Array<NA>, 
         2 => [[0,5, 1,6] as NA, [1,6, 3,6] as NA, [3,6, 4,5] as NA, [4,5, 4,4] as NA, [4,4, 3,3] as NA, [3,3, 1,3] as NA, [1,3, 0,2] as NA, [0,2, 0,0] as NA, [0,0, 4,0] as NA] as Array<NA>, 
@@ -548,7 +548,7 @@ class TimeLeftSource extends BaseSource {
             //we have a progress in %
             painter.m_drawContext.m_dc.setColor( 
                 (m_flow != TF_INCREASES) ? (painter.m_drawContext.m_inversed ? Graphics.COLOR_DK_GREEN : Graphics.COLOR_GREEN)
-                                         : (painter.m_drawContext.m_inversed ? Graphics.COLOR_DK_RED : Graphics.COLOR_RED),
+                                         : (painter.m_drawContext.m_inversed ? Graphics.COLOR_DK_RED : Graphics.COLOR_PINK),
                 Graphics.COLOR_TRANSPARENT);
             painter.drawProgress(m_progress);
             painter.m_drawContext.m_dc.setColor(painter.m_drawContext.m_foreColor, Graphics.COLOR_TRANSPARENT);
